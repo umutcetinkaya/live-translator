@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+*.so
+*.dylib
+
+# Models (large binary files — download via script)
+models/*.onnx
+models/*.onnx.json
+
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+*.dmg
+
+# py2app build
+build/
+dist/
+*.app
+
+# Config (contains API keys)
+.live-translator.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Dev tools
+.claude/
+
+# Logs
+*.log
+
+# Temp
+/tmp/
+*.wav
+*.mp3

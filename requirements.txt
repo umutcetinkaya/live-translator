@@ -1,0 +1,10 @@
+pyobjc-core>=10.0
+pyobjc-framework-Cocoa>=10.0
+pyobjc-framework-ScreenCaptureKit>=10.0
+pyobjc-framework-Speech>=10.0
+pyobjc-framework-AVFoundation>=10.0
+pyobjc-framework-CoreMedia>=10.0
+pyobjc-framework-CoreAudio>=10.0
+pyobjc-framework-WebKit>=10.0
+openai>=1.0.0
+piper-tts>=1.0.0
