@@ -3,8 +3,9 @@
 import sys
 import os
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+# Add src to path (use realpath to resolve symlinks and relative paths)
+_BASE = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, os.path.join(_BASE, "src"))
 
 import objc
 from AppKit import (
@@ -36,6 +37,7 @@ class AppDelegate(NSObject):
         return self
 
     def applicationDidFinishLaunching_(self, notification):
+        # Hide from dock, show only in menu bar
         NSApp.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
 
         self._overlay = TranslationOverlay(
@@ -45,10 +47,9 @@ class AppDelegate(NSObject):
             on_close=self._on_close,
             on_toggle_tts=self._on_toggle_tts,
         )
+        self._setup_status_bar()
         self._overlay.setup()
         self._overlay.show()
-
-        self._setup_status_bar()
         threading.Thread(target=self._start_pipeline, daemon=True).start()
 
     def _start_pipeline(self):
@@ -147,7 +148,41 @@ class AppDelegate(NSObject):
 
 
 def main():
+    import os, ctypes, ctypes.util
+
+    # 1. Set process name BEFORE anything else
+    try:
+        libc = ctypes.cdll.LoadLibrary(ctypes.util.find_library("c"))
+        libc.setprogname(b"Live Translator")
+    except Exception:
+        pass
+
+    # 2. Point NSBundle to our .app so macOS reads its Info.plist
+    from Foundation import NSBundle
+    res_dir = os.path.dirname(os.path.realpath(__file__))
+    if "/Contents/Resources" in res_dir:
+        bundle_path = res_dir.split("/Contents/Resources")[0]
+        our_bundle = NSBundle.bundleWithPath_(bundle_path)
+        if our_bundle:
+            our_bundle.load()
+            # Patch mainBundle's infoDictionary
+            our_info = our_bundle.infoDictionary()
+            main_info = NSBundle.mainBundle().infoDictionary()
+            if our_info and main_info:
+                main_info["CFBundleName"] = our_info.get("CFBundleName", "Live Translator")
+                main_info["CFBundleDisplayName"] = our_info.get("CFBundleDisplayName", "Live Translator")
+                main_info["CFBundleIdentifier"] = our_info.get("CFBundleIdentifier", "com.livetranslator.app")
+                main_info["CFBundleIconFile"] = our_info.get("CFBundleIconFile", "AppIcon")
+
+    # 3. Create NSApplication
     app = NSApplication.sharedApplication()
+
+    # 4. Set dock icon
+    from AppKit import NSImage
+    icon_path = os.path.join(res_dir, "AppIcon.icns")
+    if os.path.exists(icon_path):
+        app.setApplicationIconImage_(NSImage.alloc().initWithContentsOfFile_(icon_path))
+
     delegate = AppDelegate.alloc().init()
     app.setDelegate_(delegate)
     print("=" * 50)

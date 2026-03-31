@@ -287,6 +287,9 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
             <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
             <button class="btn-save" onclick="saveSettings()">Save</button>
         </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;color:rgba(255,255,255,0.25);font-size:10px;">
+            © 2025 Umut Çetinkaya — <a href="#" style="color:rgba(92,192,112,0.6);text-decoration:none;" onclick="location.href='app://openURL?url=https://umutcetinkaya.com';return false;">umutcetinkaya.com</a>
+        </div>
     </div>
 </div>
 
@@ -644,7 +647,7 @@ class TranslationOverlay:
     def _drag_move(self, x, y):
         from AppKit import NSPoint
         dx = x - self._drag_start_x
-        dy = self._drag_start_y - y  # macOS y ekseni ters
+        dy = self._drag_start_y - y  # macOS y-axis is inverted
         new_origin = NSPoint(self._drag_origin_x + dx, self._drag_origin_y + dy)
         self._window.setFrameOrigin_(new_origin)
 

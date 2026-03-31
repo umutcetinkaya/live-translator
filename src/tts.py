@@ -12,7 +12,30 @@ import time
 import queue
 from config import load_config
 
-MODELS_DIR = os.path.join(os.path.dirname(__file__), "models")
+# Find models dir — works both from source and .app bundle
+def _find_models_dir():
+    # Try relative to this file
+    for base in [
+        os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        os.path.dirname(os.path.dirname(__file__)) if os.path.dirname(__file__) else None,
+    ]:
+        if base:
+            candidate = os.path.join(base, "models")
+            if os.path.isdir(candidate):
+                return candidate
+    # Try from sys.argv[0] (main.py location)
+    import sys
+    if sys.argv:
+        candidate = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), "models")
+        if os.path.isdir(candidate):
+            return candidate
+    # Try cwd
+    if os.path.isdir("models"):
+        return os.path.abspath("models")
+    return os.path.join(os.path.dirname(__file__), "models")
+
+MODELS_DIR = _find_models_dir()
 
 PIPER_VOICES = {
     "tr": "tr_TR-dfki-medium",

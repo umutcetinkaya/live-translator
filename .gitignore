@@ -17,6 +17,10 @@ env/
 models/*.onnx
 models/*.onnx.json
 
+# Original video files (too large for git)
+assets/videos/*.mov
+assets/videos/*.mp4
+
 # macOS
 .DS_Store
 ._*
@@ -41,6 +45,14 @@ dist/
 
 # Dev tools
 .claude/
+.env
+.env.*
+
+# Signing
+*.p12
+*.cer
+*.certSigningRequest
+*.key
 
 # Logs
 *.log

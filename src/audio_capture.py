@@ -1,4 +1,10 @@
-"""System audio capture using ScreenCaptureKit (macOS 13+)."""
+"""System audio capture using ScreenCaptureKit (macOS 13+).
+
+macOS 26+ notes:
+- Must run from .app bundle for Screen Recording permission
+- Uses dispatch_queue for reliable audio callbacks
+- Uses getShareableContentExcludingDesktopWindows for compatibility
+"""
 
 import objc
 import ScreenCaptureKit
@@ -11,6 +17,16 @@ from ScreenCaptureKit import (
 import CoreMedia
 from Foundation import NSObject
 import threading
+import ctypes
+import ctypes.util
+
+
+def _create_dispatch_queue(label):
+    """Create a serial dispatch queue for audio callbacks."""
+    libdispatch = ctypes.cdll.LoadLibrary(ctypes.util.find_library("dispatch"))
+    libdispatch.dispatch_queue_create.restype = ctypes.c_void_p
+    libdispatch.dispatch_queue_create.argtypes = [ctypes.c_char_p, ctypes.c_void_p]
+    return libdispatch.dispatch_queue_create(label, None)
 
 
 class AudioCaptureDelegate(NSObject):
@@ -46,6 +62,7 @@ class SystemAudioCapture:
         self._stream = None
         self._delegate = None
         self._running = False
+        self._audio_queue = None
 
     def start(self):
         event = threading.Event()
@@ -64,30 +81,53 @@ class SystemAudioCapture:
                 event.set()
                 return
 
-            content_filter = SCContentFilter.alloc().initWithDisplay_excludingWindows_(
-                displays[0], []
+            display = displays[0]
+            apps = content.applications()
+            print(f"[AudioCapture] Display: {display.width()}x{display.height()}, Apps: {len(apps)}")
+
+            # Content filter — include all apps' audio (exclude only our app)
+            our_bundle = "com.livetranslator.app"
+            excluded_apps = [a for a in apps if str(a.bundleIdentifier()) == our_bundle]
+            included_apps = [a for a in apps if str(a.bundleIdentifier()) != our_bundle]
+
+            # Try display-based filter with all windows included
+            content_filter = SCContentFilter.alloc().initWithDisplay_includingApplications_exceptingWindows_(
+                display, included_apps, []
             )
 
+            # Stream configuration
             config = SCStreamConfiguration.alloc().init()
             config.setCapturesAudio_(True)
-            config.setSampleRate_(16000)
+            config.setSampleRate_(44100)   # macOS native audio rate
             config.setChannelCount_(1)
             config.setWidth_(2)
             config.setHeight_(2)
             config.setMinimumFrameInterval_(CoreMedia.CMTimeMake(1, 1))
             config.setExcludesCurrentProcessAudio_(True)
 
+            # Delegate
             self._delegate = AudioCaptureDelegate.alloc().init()
             self._delegate.setCallback_(self._on_audio_buffer)
 
+            # Stream
             self._stream = SCStream.alloc().initWithFilter_configuration_delegate_(
                 content_filter, config, None
             )
 
-            self._stream.addStreamOutput_type_sampleHandlerQueue_error_(
-                self._delegate, 1, None, None
-            )
+            # Add output with a proper dispatch queue (required on macOS 26+)
+            try:
+                self._audio_queue = _create_dispatch_queue(b"com.livetranslator.audio")
+                self._stream.addStreamOutput_type_sampleHandlerQueue_error_(
+                    self._delegate, 1, objc.objc_object(c_void_p=self._audio_queue), None
+                )
+                print("[AudioCapture] Using dispatch queue")
+            except Exception as e:
+                print(f"[AudioCapture] Dispatch queue failed ({e}), using None")
+                self._stream.addStreamOutput_type_sampleHandlerQueue_error_(
+                    self._delegate, 1, None, None
+                )
 
+            # Start
             def on_start(error):
                 if error:
                     print(f"[AudioCapture] Start error: {error}")
@@ -99,7 +139,14 @@ class SystemAudioCapture:
 
             self._stream.startCaptureWithCompletionHandler_(on_start)
 
-        SCShareableContent.getShareableContentWithCompletionHandler_(on_content)
+        # Use newer API if available
+        try:
+            SCShareableContent.getShareableContentExcludingDesktopWindows_onScreenWindowsOnly_completionHandler_(
+                True, True, on_content
+            )
+        except AttributeError:
+            SCShareableContent.getShareableContentWithCompletionHandler_(on_content)
+
         event.wait(timeout=10)
 
         if error_ref[0]:
