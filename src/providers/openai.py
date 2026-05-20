@@ -1,5 +1,7 @@
 """OpenAI provider implementasyonları (çeviri + TTS)."""
 
+import os
+import tempfile
 from providers.base import TranslationProvider, TTSProvider, ProviderError
 
 SYSTEM_PROMPT = """\
@@ -55,3 +57,22 @@ class OpenAITranslationProvider(TranslationProvider):
             return resp.choices[0].message.content.strip()
         except Exception as e:
             raise ProviderError(f"OpenAI çeviri hatası: {e}") from e
+
+
+class OpenAITTSProvider(TTSProvider):
+    def __init__(self, client, tmp_dir=None):
+        self._client = client
+        self._tmp_dir = tmp_dir or tempfile.gettempdir()
+
+    def synthesize(self, text, lang, voice, speed):
+        if not self._client:
+            raise ProviderError("OpenAI TTS: API key yok")
+        try:
+            resp = self._client.audio.speech.create(
+                model="tts-1", voice=voice, input=text, speed=speed,
+            )
+            path = os.path.join(self._tmp_dir, "tts_output.mp3")
+            resp.stream_to_file(path)
+            return path
+        except Exception as e:
+            raise ProviderError(f"OpenAI TTS hatası: {e}") from e
