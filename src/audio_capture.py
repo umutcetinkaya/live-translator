@@ -85,15 +85,26 @@ class SystemAudioCapture:
             apps = content.applications()
             print(f"[AudioCapture] Display: {display.width()}x{display.height()}, Apps: {len(apps)}")
 
-            # Content filter — include all apps' audio (exclude only our app)
+            # Content filter — capture ALL system audio, excluding only our own app.
+            # excludingApplications kullanıyoruz (includingApplications DEĞİL): böylece
+            # capture başladıktan SONRA açılan uygulamaların sesi de otomatik yakalanır.
+            # Statik includingApplications listesi sadece start() anındaki uygulamaları
+            # alır ve sonradan açılan ses kaynaklarını kaçırırdı.
             our_bundle = "com.livetranslator.app"
             excluded_apps = [a for a in apps if str(a.bundleIdentifier()) == our_bundle]
-            included_apps = [a for a in apps if str(a.bundleIdentifier()) != our_bundle]
 
-            # Try display-based filter with all windows included
-            content_filter = SCContentFilter.alloc().initWithDisplay_includingApplications_exceptingWindows_(
-                display, included_apps, []
-            )
+            try:
+                content_filter = SCContentFilter.alloc().initWithDisplay_excludingApplications_exceptingWindows_(
+                    display, excluded_apps, []
+                )
+                print(f"[AudioCapture] Filter: tüm sistem sesi (excluding {len(excluded_apps)} app)")
+            except Exception as e:
+                # Eski API'ye düş (start anındaki uygulamalarla sınırlı)
+                print(f"[AudioCapture] excludingApplications yok ({e}), includingApplications'a düşülüyor")
+                included_apps = [a for a in apps if str(a.bundleIdentifier()) != our_bundle]
+                content_filter = SCContentFilter.alloc().initWithDisplay_includingApplications_exceptingWindows_(
+                    display, included_apps, []
+                )
 
             # Stream configuration
             config = SCStreamConfiguration.alloc().init()
