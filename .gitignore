@@ -64,3 +64,6 @@ dist/
 
 # Dokümantasyon ve çalışma artefaktları (superpowers spec/plan)
 docs/
+
+# Git worktree fallback dizini
+.worktrees/
