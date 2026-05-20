@@ -92,9 +92,9 @@ class SystemAudioCapture:
                 content_filter = SCContentFilter.alloc().initWithDisplay_excludingApplications_exceptingWindows_(
                     display, excluded_apps, []
                 )
-                print(f"[AudioCapture] Filter: tüm sistem sesi (excluding {len(excluded_apps)} app)")
+                print(f"[AudioCapture] Filter: all system audio (excluding {len(excluded_apps)} apps)")
             except Exception as e:
-                print(f"[AudioCapture] excludingApplications yok ({e}), includingApplications'a düşülüyor")
+                print(f"[AudioCapture] excludingApplications unavailable ({e}), falling back to includingApplications")
                 included_apps = [a for a in apps if str(a.bundleIdentifier()) != our_bundle]
                 content_filter = SCContentFilter.alloc().initWithDisplay_includingApplications_exceptingWindows_(
                     display, included_apps, []

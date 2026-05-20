@@ -54,7 +54,7 @@ class TranslationPipeline:
             try:
                 self._realtime = get_realtime_provider(self._config)
             except Exception as e:
-                print(f"[Pipeline] Realtime kurulamadı, on-device'a düşülüyor: {e}")
+                print(f"[Pipeline] Realtime setup failed, falling back to on-device: {e}")
                 self._realtime_mode = False
 
     def _full_source(self):
@@ -78,7 +78,7 @@ class TranslationPipeline:
                     "⏳ Realtime mode — collecting context, translation starts shortly…"
                 )
             except Exception as e:
-                print(f"[Pipeline] Realtime başlatılamadı, fallback: {e}")
+                print(f"[Pipeline] Realtime start failed, fallback: {e}")
                 self._realtime = None
                 self._realtime_mode = False
         if not self._realtime_mode:
@@ -130,7 +130,7 @@ class TranslationPipeline:
             try:
                 self._realtime = get_realtime_provider(self._config)
             except Exception as e:
-                print(f"[Pipeline] Realtime yeniden kurulamadı, fallback: {e}")
+                print(f"[Pipeline] Realtime re-setup failed, fallback: {e}")
                 self._realtime_mode = False
                 self._realtime = None
 
@@ -173,10 +173,10 @@ class TranslationPipeline:
             self._recognizer.append_audio_buffer(sample_buffer)
 
     def _pcm_from_buffer(self, sample_buffer):
-        """CMSampleBuffer -> realtime API formatında mono s16 PCM.
+        """CMSampleBuffer -> mono s16 PCM in realtime API format.
 
-        audio_capture 44100 Hz üretir. OpenAI Realtime GA 24kHz, Gemini Live 16kHz
-        ister; provider'a göre hedef örnekleme hızını seçeriz."""
+        audio_capture produces 44100 Hz. OpenAI Realtime GA wants 24kHz, Gemini Live wants 16kHz;
+        we select the target sample rate based on the provider."""
         from audio_pcm import (extract_pcm_from_sample_buffer, resample_s16,
                                RATE_OPENAI, RATE_GEMINI)
         raw = extract_pcm_from_sample_buffer(sample_buffer)

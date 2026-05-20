@@ -393,10 +393,10 @@ function populateModels() {
 }
 function onProviderChange() {
     const provider = document.getElementById('providerSelect').value;
-    // İlgili API key alanını göster, diğerini gizle
+    // Show the relevant API key field, hide the other
     document.getElementById('openaiKeyRow').classList.toggle('hidden', provider !== 'openai');
     document.getElementById('geminiKeyRow').classList.toggle('hidden', provider !== 'gemini');
-    // Realtime sadece OpenAI'da kullanılabilir; Gemini'de kapat + devre dışı bırak
+    // Realtime is only available with OpenAI; disable and turn off for Gemini
     const rt = document.getElementById('realtimeToggle');
     const hint = document.getElementById('realtimeHint');
     if (provider === 'gemini') {
@@ -417,7 +417,7 @@ function onRealtimeChange() {
 }
 
 function onTtsProviderChange() {
-    // OpenAI voice seçimi yalnızca OpenAI TTS'te anlamlı
+    // OpenAI voice selection only matters for OpenAI TTS
     const tts = document.getElementById('ttsProvider').value;
     document.getElementById('openaiVoiceRow').classList.toggle('hidden', tts !== 'openai');
 }
@@ -562,8 +562,8 @@ function saveSettings() {
 }
 
 function initSettings() {
-    onProviderChange();      // key satırları + realtime durumu + modeller
-    onTtsProviderChange();   // OpenAI voice görünürlüğü
+    onProviderChange();      // key rows + realtime state + models
+    onTtsProviderChange();   // OpenAI voice visibility
 }
 document.addEventListener('DOMContentLoaded', initSettings);
 initSettings();

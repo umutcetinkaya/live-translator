@@ -1,4 +1,4 @@
-"""Live document translation — provider-agnostic orkestratör."""
+"""Live document translation — provider-agnostic orchestrator."""
 
 import threading
 import time

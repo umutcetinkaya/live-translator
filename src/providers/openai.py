@@ -1,4 +1,4 @@
-"""OpenAI provider implementasyonları (çeviri + TTS)."""
+"""OpenAI provider implementations (translation + TTS)."""
 
 import os
 import tempfile
@@ -32,7 +32,7 @@ class OpenAITranslationProvider(TranslationProvider):
 
     def translate_document(self, source, prev_translation, target_lang, model):
         if not self._client:
-            raise ProviderError("OpenAI: API key yok")
+            raise ProviderError("OpenAI: no API key")
         modern = model.startswith("o") or model.startswith("gpt-5")
         system = SYSTEM_PROMPT.replace("{target_lang}", target_lang)
         user_msg = f"Full transcript:\n\n{source}"
@@ -56,7 +56,7 @@ class OpenAITranslationProvider(TranslationProvider):
             resp = self._client.chat.completions.create(**params)
             return resp.choices[0].message.content.strip()
         except Exception as e:
-            raise ProviderError(f"OpenAI çeviri hatası: {e}") from e
+            raise ProviderError(f"OpenAI translation error: {e}") from e
 
 
 class OpenAITTSProvider(TTSProvider):
@@ -66,7 +66,7 @@ class OpenAITTSProvider(TTSProvider):
 
     def synthesize(self, text, lang, voice, speed):
         if not self._client:
-            raise ProviderError("OpenAI TTS: API key yok")
+            raise ProviderError("OpenAI TTS: no API key")
         try:
             resp = self._client.audio.speech.create(
                 model="tts-1", voice=voice, input=text, speed=speed,
@@ -75,4 +75,4 @@ class OpenAITTSProvider(TTSProvider):
             resp.stream_to_file(path)
             return path
         except Exception as e:
-            raise ProviderError(f"OpenAI TTS hatası: {e}") from e
+            raise ProviderError(f"OpenAI TTS error: {e}") from e

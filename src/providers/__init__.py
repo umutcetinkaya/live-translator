@@ -1,4 +1,4 @@
-"""Provider factory — config'e göre uygun provider'ı döner."""
+"""Provider factory — returns the appropriate provider based on config."""
 
 from providers.base import ProviderError
 from providers.openai import OpenAITranslationProvider, OpenAITTSProvider
@@ -28,7 +28,7 @@ def get_translation_provider(config):
         return OpenAITranslationProvider(client=_make_openai_client(config))
     if name == "gemini":
         return GeminiTranslationProvider(client=_make_gemini_client(config))
-    raise ProviderError(f"Bilinmeyen çeviri provider'ı: {name}")
+    raise ProviderError(f"Unknown translation provider: {name}")
 
 
 def get_tts_provider(config):
@@ -39,7 +39,7 @@ def get_tts_provider(config):
         return OpenAITTSProvider(client=_make_openai_client(config))
     if name == "gemini":
         return GeminiTTSProvider(client=_make_gemini_client(config))
-    raise ProviderError(f"Bilinmeyen TTS provider'ı: {name}")
+    raise ProviderError(f"Unknown TTS provider: {name}")
 
 
 from providers.realtime_openai import OpenAIRealtimeProvider
@@ -58,4 +58,4 @@ def get_realtime_provider(config):
         return GeminiRealtimeProvider(api_key=config.get("gemini_api_key", ""),
                                       model=model,
                                       target_language=config.get("target_lang", "tr"))
-    raise ProviderError(f"Bilinmeyen realtime provider'ı: {name}")
+    raise ProviderError(f"Unknown realtime provider: {name}")

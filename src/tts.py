@@ -1,7 +1,7 @@
-"""Text-to-Speech orkestratörü — üretimi TTSProvider'a delege eder.
+"""Text-to-Speech orchestrator — delegates synthesis to TTSProvider.
 
-Kuyruk-tabanlı: çeviriler sırayla okunur. AVAudioPlayer (aynı process) ile
-oynatılır; excludesCurrentProcessAudio sayesinde geri besleme olmaz.
+Queue-based: translations are spoken in order. Played via AVAudioPlayer (same process);
+no feedback loop thanks to excludesCurrentProcessAudio.
 """
 
 import threading

@@ -1,4 +1,4 @@
-"""Piper offline TTS provider'ı."""
+"""Piper offline TTS provider."""
 
 import os
 import wave
@@ -42,16 +42,16 @@ class PiperTTSProvider(TTSProvider):
             return
         model_name = PIPER_VOICES.get(lang)
         if not model_name:
-            raise ProviderError(f"Piper: '{lang}' için ses yok")
+            raise ProviderError(f"Piper: no voice for '{lang}'")
         model_path = os.path.join(self._models_dir, f"{model_name}.onnx")
         if not os.path.exists(model_path):
-            raise ProviderError(f"Piper: model dosyası yok: {model_path}")
+            raise ProviderError(f"Piper: model file not found: {model_path}")
         try:
             from piper import PiperVoice
             self._voice = PiperVoice.load(model_path)
             self._voice_lang = lang
         except Exception as e:
-            raise ProviderError(f"Piper yükleme hatası: {e}") from e
+            raise ProviderError(f"Piper load error: {e}") from e
 
     def synthesize(self, text, lang, voice, speed):
         self._ensure_voice(lang)
@@ -61,4 +61,4 @@ class PiperTTSProvider(TTSProvider):
                 self._voice.synthesize_wav(text, f)
             return path
         except Exception as e:
-            raise ProviderError(f"Piper sentez hatası: {e}") from e
+            raise ProviderError(f"Piper synthesis error: {e}") from e

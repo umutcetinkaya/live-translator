@@ -1,7 +1,7 @@
-"""Saf-Python ses yardımcıları — realtime köprüsü için PCM dönüşümü.
+"""Pure-Python audio helpers — PCM conversion for the realtime bridge.
 
-ScreenCaptureKit 44100 Hz mono s16 üretir. OpenAI Realtime GA 24000 Hz, Gemini
-Live 16000 Hz ister. Bağımlılık eklemeden (numpy yok) decimation tabanlı resample.
+ScreenCaptureKit produces 44100 Hz mono s16. OpenAI Realtime GA wants 24000 Hz,
+Gemini Live wants 16000 Hz. Decimation-based resample with no extra dependencies (no numpy).
 """
 
 import array
@@ -13,10 +13,10 @@ RATE_GEMINI = 16000
 
 
 def resample_s16(pcm_bytes, rate_out=RATE_OUT, rate_in=RATE_IN):
-    """mono s16le -> mono s16le (nearest-sample resample, varsayılan 44100->16000).
+    """mono s16le -> mono s16le (nearest-sample resample, default 44100->16000).
 
-    Basit ama bağımlılıksız: her çıkış örneği için en yakın giriş örneğini seçer.
-    Kaliteli değil ama realtime için yeterli; kalite gerekirse AVAudioConverter.
+    Simple but dependency-free: selects the nearest input sample for each output sample.
+    Not high quality, but sufficient for realtime; use AVAudioConverter if quality matters.
     """
     if not pcm_bytes:
         return b""
@@ -37,17 +37,17 @@ def resample_s16(pcm_bytes, rate_out=RATE_OUT, rate_in=RATE_IN):
 
 
 def extract_pcm_from_sample_buffer(sample_buffer):
-    """CMSampleBuffer -> ham s16 PCM bytes (kaynak örnekleme hızında).
+    """CMSampleBuffer -> raw s16 PCM bytes (at source sample rate).
 
-    NOT: Bu fonksiyon canlı ses gerektirir; headless test edilemez.
-    Gerçek CMSampleBuffer formatı çalışma anında loglanır (aşağıdaki print'ler).
-    Başarısız olursa None döner — çağıran bunu güvenle yutar.
+    NOTE: This function requires live audio; cannot be tested headless.
+    The actual CMSampleBuffer format is logged at runtime (prints below).
+    Returns None on failure — callers can safely swallow this.
     """
     try:
         import CoreMedia
         block = CoreMedia.CMSampleBufferGetDataBuffer(sample_buffer)
         if block is None:
-            print("[audio_pcm] DataBuffer None — format incelenmeli")
+            print("[audio_pcm] DataBuffer None — format should be inspected")
             return None
         total = CoreMedia.CMBlockBufferGetDataLength(block)
         if not total:

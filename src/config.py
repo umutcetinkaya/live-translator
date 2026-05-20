@@ -26,7 +26,7 @@ MODELS = {
 
 
 def normalize_model(model, provider):
-    """Geçersiz/eski model isimlerini provider varsayılanına düşür."""
+    """Normalize invalid/outdated model names to the provider default."""
     valid = MODELS.get(provider, [])
     if model in valid:
         return model

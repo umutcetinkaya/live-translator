@@ -1,39 +1,39 @@
-"""Provider arayüzleri — çeviri ve TTS için takılabilir sözleşmeler."""
+"""Provider interfaces — pluggable contracts for translation and TTS."""
 
 from abc import ABC, abstractmethod
 
 
 class ProviderError(Exception):
-    """Tüm provider hataları bu tipe sarılır."""
+    """All provider errors are wrapped in this type."""
 
 
 class TranslationProvider(ABC):
     @abstractmethod
     def translate_document(self, source: str, prev_translation: str,
                            target_lang: str, model: str) -> str:
-        """Live-document çeviri: önceki çeviriyi koru, yeni içeriği ekle.
-        Tam güncel çeviriyi döner. Hata olursa ProviderError fırlatır."""
+        """Live-document translation: preserve previous translation, append new content.
+        Returns the full up-to-date translation. Raises ProviderError on failure."""
         raise NotImplementedError
 
 
 class TTSProvider(ABC):
     @abstractmethod
     def synthesize(self, text: str, lang: str, voice: str, speed: float) -> str:
-        """Ses dosyası üretir, dosya yolunu (wav/mp3) döner.
-        Üretemezse ProviderError fırlatır. Oynatma çağırana aittir."""
+        """Produces an audio file and returns its path (wav/mp3).
+        Raises ProviderError on failure. Playback is the caller's responsibility."""
         raise NotImplementedError
 
 
 class RealtimeProvider(ABC):
     @abstractmethod
     def start(self, on_translation, on_source) -> None:
-        """Realtime oturumu başlatır. on_translation(text), on_source(text)
-        callback'leri kısmi/tam sonuçlarla çağrılır."""
+        """Starts a realtime session. on_translation(text) and on_source(text)
+        callbacks are called with partial/complete results."""
         raise NotImplementedError
 
     @abstractmethod
     def feed_audio(self, pcm_chunk: bytes) -> None:
-        """16kHz/16-bit/mono PCM parçasını oturuma gönderir."""
+        """Sends a 16kHz/16-bit/mono PCM chunk to the session."""
         raise NotImplementedError
 
     @abstractmethod

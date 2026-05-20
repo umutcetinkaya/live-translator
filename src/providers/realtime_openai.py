@@ -1,8 +1,9 @@
-"""OpenAI Realtime ses çeviri provider'ı (GA Realtime Translation, WebSocket).
+"""OpenAI Realtime audio translation provider (GA Realtime Translation, WebSocket).
 
-Özel çeviri endpoint'i /v1/realtime/translations kullanır. Kaynak dili otomatik
-algılanır; sadece hedef dil verilir. Çeviri, output_transcript.delta event'leriyle
-parça parça gelir. ws_factory enjekte edilebilir (test: mock, üretim: gerçek socket).
+Uses the dedicated translation endpoint /v1/realtime/translations. Source language is
+detected automatically; only the target language is required. Translation arrives
+incrementally via output_transcript.delta events. ws_factory is injectable (test: mock,
+production: real socket).
 """
 
 import base64
@@ -35,7 +36,7 @@ class OpenAIRealtimeProvider(RealtimeProvider):
 
     def start(self, on_translation, on_source):
         if not self._api_key:
-            raise ProviderError("OpenAI Realtime: API key yok")
+            raise ProviderError("OpenAI Realtime: no API key")
         self._on_translation = on_translation
         self._on_source = on_source
         headers = {"Authorization": f"Bearer {self._api_key}"}
@@ -45,7 +46,7 @@ class OpenAIRealtimeProvider(RealtimeProvider):
         self._reader = threading.Thread(target=self._read_loop, daemon=True)
         self._reader.start()
         self._configure_session()
-        print(f"[OpenAIRealtime] Bağlandı (hedef dil={self._target_language})")
+        print(f"[OpenAIRealtime] Connected (target lang={self._target_language})")
 
     def _configure_session(self):
         ws = self._ws
@@ -66,7 +67,7 @@ class OpenAIRealtimeProvider(RealtimeProvider):
         try:
             ws.send(json.dumps(cfg))
         except Exception as e:
-            print(f"[OpenAIRealtime] session.update hatası: {e}")
+            print(f"[OpenAIRealtime] session.update error: {e}")
 
     def feed_audio(self, pcm_chunk):
         ws = self._ws
@@ -78,11 +79,11 @@ class OpenAIRealtimeProvider(RealtimeProvider):
                 "type": "session.input_audio_buffer.append", "audio": b64,
             }))
         except Exception as e:
-            print(f"[OpenAIRealtime] Bağlantı koptu, ses gönderilemedi: {e}")
+            print(f"[OpenAIRealtime] Connection lost, could not send audio: {e}")
             self._close()
 
     def _close(self):
-        """Bağlantıyı güvenle kapat ve durumu temizle (tekrar çağrılabilir)."""
+        """Safely close the connection and clean up state (idempotent)."""
         self._running = False
         ws, self._ws = self._ws, None
         if ws:
@@ -120,7 +121,7 @@ class OpenAIRealtimeProvider(RealtimeProvider):
                 print(f"[OpenAIRealtime] API error: {evt.get('error')}")
 
     def _flush_sentences(self):
-        """Biriken metinde tamamlanmış cümleleri (.?!… ile biten) balon olarak gönder."""
+        """Emit completed sentences (.?!…) accumulated in the buffer."""
         import re
         while True:
             m = re.search(r"[.!?…]+[\s]*", self._translation)

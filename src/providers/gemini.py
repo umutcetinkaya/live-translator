@@ -1,4 +1,4 @@
-"""Gemini provider implementasyonları (çeviri + TTS) — google-genai SDK."""
+"""Gemini provider implementations (translation + TTS) — google-genai SDK."""
 
 import os
 import wave
@@ -18,7 +18,7 @@ class GeminiTranslationProvider(TranslationProvider):
 
     def translate_document(self, source, prev_translation, target_lang, model):
         if not self._client:
-            raise ProviderError("Gemini: API key yok")
+            raise ProviderError("Gemini: no API key")
         system = SYSTEM_PROMPT.replace("{target_lang}", target_lang)
         user_msg = f"Full transcript:\n\n{source}"
         if prev_translation:
@@ -31,7 +31,7 @@ class GeminiTranslationProvider(TranslationProvider):
             )
             return (resp.text or "").strip()
         except Exception as e:
-            raise ProviderError(f"Gemini çeviri hatası: {e}") from e
+            raise ProviderError(f"Gemini translation error: {e}") from e
 
 
 _TTS_RATE = 24000
@@ -45,7 +45,7 @@ class GeminiTTSProvider(TTSProvider):
 
     def synthesize(self, text, lang, voice, speed):
         if not self._client:
-            raise ProviderError("Gemini TTS: API key yok")
+            raise ProviderError("Gemini TTS: no API key")
         try:
             from google.genai import types
             resp = self._client.models.generate_content(
@@ -64,9 +64,9 @@ class GeminiTTSProvider(TTSProvider):
             )
             pcm = resp.candidates[0].content.parts[0].inline_data.data
         except ImportError as e:
-            raise ProviderError(f"Gemini TTS: google-genai yüklü değil: {e}") from e
+            raise ProviderError(f"Gemini TTS: google-genai not installed: {e}") from e
         except Exception as e:
-            raise ProviderError(f"Gemini TTS hatası: {e}") from e
+            raise ProviderError(f"Gemini TTS error: {e}") from e
 
         path = os.path.join(self._tmp_dir, "tts_output.wav")
         with wave.open(path, "wb") as f:

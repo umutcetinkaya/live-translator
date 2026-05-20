@@ -1,13 +1,15 @@
-"""Gemini Live API realtime ses çeviri provider'ı.
+"""Gemini Live API realtime audio translation provider.
 
-DENEYSEL — canlı doğrulanmadı: session açılıyor ve ses gönderiliyor ama receive()
-çeviri döndürmüyor (async/VAD davranışı netleşmedi). UI'da Gemini seçiliyken realtime
-modu devre dışıdır; OpenAI realtime ve her iki on-device çeviri tam çalışır.
+EXPERIMENTAL — not validated live: session opens and audio is sent, but receive()
+does not return translations (async/VAD behavior unclear). Realtime mode is disabled
+when Gemini is selected in the UI; OpenAI realtime and both on-device translation
+modes work fully.
 
-Gemini Live çeviri-özel değildir; system instruction ile "çevir" deriz. Async
-Live session ayrı bir thread'de kendi event loop'unda sürülür. feed_audio (başka
-thread'den) ses chunk'larını bir asyncio.Queue'ya koyar; loop içindeki sender task
-bunları gönderir, receiver task çeviriyi alır. Giriş 16kHz PCM, çıkış AUDIO + transcript.
+Gemini Live is not translation-specific; we instruct it to translate via system
+instruction. The async Live session runs in its own event loop on a dedicated thread.
+feed_audio (called from another thread) puts audio chunks into an asyncio.Queue;
+the sender task inside the loop forwards them, and the receiver task collects the
+translation. Input: 16kHz PCM, output: AUDIO + transcript.
 """
 
 import asyncio
@@ -37,21 +39,21 @@ class GeminiRealtimeProvider(RealtimeProvider):
 
     def start(self, on_translation, on_source):
         if not self._api_key:
-            raise ProviderError("Gemini Realtime: API key yok")
+            raise ProviderError("Gemini Realtime: no API key")
         self._on_translation = on_translation
         self._on_source = on_source
         self._running = True
         self._loop = asyncio.new_event_loop()
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
-        print(f"[GeminiRealtime] Başlatıldı (model={self._model}, hedef={self._target_language})")
+        print(f"[GeminiRealtime] Started (model={self._model}, target={self._target_language})")
 
     def _run_loop(self):
         asyncio.set_event_loop(self._loop)
         try:
             self._loop.run_until_complete(self._session_main())
         except Exception as e:
-            print(f"[GeminiRealtime] Oturum sonlandı: {e}")
+            print(f"[GeminiRealtime] Session ended: {e}")
         finally:
             self._running = False
 
@@ -76,7 +78,7 @@ class GeminiRealtimeProvider(RealtimeProvider):
         }
         self._audio_q = asyncio.Queue()
         async with client.aio.live.connect(model=self._model, config=config) as session:
-            print("[GeminiRealtime] Live session açıldı")
+            print("[GeminiRealtime] Live session opened")
             sender = asyncio.create_task(self._sender(session))
             try:
                 await self._receiver(session)
@@ -95,7 +97,7 @@ class GeminiRealtimeProvider(RealtimeProvider):
                     audio=types.Blob(data=chunk, mime_type="audio/pcm;rate=16000")
                 )
             except Exception as e:
-                print(f"[GeminiRealtime] gönderim hatası: {e}")
+                print(f"[GeminiRealtime] send error: {e}")
                 break
 
     async def _receiver(self, session):
