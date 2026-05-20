@@ -41,18 +41,36 @@ class OpenAIRealtimeProvider(RealtimeProvider):
         self._reader.start()
 
     def feed_audio(self, pcm_chunk):
-        if not self._ws:
+        ws = self._ws
+        if not ws:
             return
         b64 = base64.b64encode(pcm_chunk).decode("ascii")
-        self._ws.send(json.dumps({
-            "type": "input_audio_buffer.append", "audio": b64,
-        }))
+        try:
+            ws.send(json.dumps({
+                "type": "input_audio_buffer.append", "audio": b64,
+            }))
+        except Exception as e:
+            # Kopuk/kapalı socket'e yazma uygulamayı çökertmemeli.
+            # feed_audio native dispatch thread'inden çağrılır; hatayı burada yut.
+            print(f"[OpenAIRealtime] Bağlantı koptu, ses gönderilemedi: {e}")
+            self._close()
+
+    def _close(self):
+        """Bağlantıyı güvenle kapat ve durumu temizle (tekrar çağrılabilir)."""
+        self._running = False
+        ws, self._ws = self._ws, None
+        if ws:
+            try:
+                ws.close()
+            except Exception:
+                pass
 
     def _read_loop(self):
         while self._running and self._ws:
             try:
                 raw = self._ws.recv()
             except Exception:
+                # Bağlantı koptu — döngüden çık (stop/feed_audio temizler).
                 break
             if not raw:
                 continue
@@ -68,10 +86,4 @@ class OpenAIRealtimeProvider(RealtimeProvider):
                 self._on_source(text)
 
     def stop(self):
-        self._running = False
-        if self._ws:
-            try:
-                self._ws.close()
-            except Exception:
-                pass
-            self._ws = None
+        self._close()
