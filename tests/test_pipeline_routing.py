@@ -35,6 +35,27 @@ def test_realtime_off_uses_recognizer(monkeypatch):
                 "target_lang": "tr"})
     assert p.is_realtime is False
 
+def test_no_speech_shows_english_hint(monkeypatch):
+    _patch_components(monkeypatch)
+    overlay = MagicMock()
+    p = pipeline_mod.TranslationPipeline(overlay,
+        config={"realtime_mode": False, "source_locale": "en-US",
+                "target_lang": "tr"})
+    p._on_no_speech()  # henüz hiç konuşma yok → ipucu göster
+    overlay.update_original_on_main_thread.assert_called_once()
+    msg = overlay.update_original_on_main_thread.call_args.args[0]
+    assert "No audio detected" in msg
+
+def test_no_speech_silent_when_already_transcribing(monkeypatch):
+    _patch_components(monkeypatch)
+    overlay = MagicMock()
+    p = pipeline_mod.TranslationPipeline(overlay,
+        config={"realtime_mode": False, "source_locale": "en-US",
+                "target_lang": "tr"})
+    p._finalized_text = "hello world"  # zaten konuşma var
+    p._on_no_speech()
+    overlay.update_original_on_main_thread.assert_not_called()
+
 def test_realtime_on_sets_flag(monkeypatch):
     _patch_components(monkeypatch)
     monkeypatch.setattr(pipeline_mod, "get_realtime_provider",

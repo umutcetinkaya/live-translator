@@ -28,6 +28,24 @@ def test_translate_document_includes_previous_in_prompt():
     user_msg = sent["messages"][1]["content"]
     assert "Merhaba dünya" in user_msg
 
+def test_gpt5_uses_max_completion_tokens_not_max_tokens():
+    # GPT-5.x modelleri max_tokens'ı reddediyor (400); max_completion_tokens ister.
+    client = _fake_client("Merhaba")
+    p = OpenAITranslationProvider(client=client)
+    p.translate_document("Hello", "", "Turkish", "gpt-5.4-mini")
+    sent = client.chat.completions.create.call_args.kwargs
+    assert "max_completion_tokens" in sent
+    assert "max_tokens" not in sent
+    assert "temperature" not in sent  # GPT-5/o-serisi temperature da desteklemez
+
+def test_legacy_gpt4_uses_max_tokens():
+    client = _fake_client("Merhaba")
+    p = OpenAITranslationProvider(client=client)
+    p.translate_document("Hello", "", "Turkish", "gpt-4o-mini")
+    sent = client.chat.completions.create.call_args.kwargs
+    assert "max_tokens" in sent
+    assert "max_completion_tokens" not in sent
+
 def test_no_client_raises_provider_error():
     p = OpenAITranslationProvider(client=None)
     with pytest.raises(ProviderError):

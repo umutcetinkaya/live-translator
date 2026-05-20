@@ -24,10 +24,12 @@ RESTART_INTERVAL = 50  # seconds (Apple limit ~60s)
 
 class RealtimeSpeechRecognizer:
 
-    def __init__(self, locale="en-US", on_partial=None, on_segment=None, config=None):
+    def __init__(self, locale="en-US", on_partial=None, on_segment=None,
+                 config=None, on_no_speech=None):
         self._locale = locale
         self._on_partial = on_partial
         self._on_segment = on_segment
+        self._on_no_speech = on_no_speech
         self._recognizer = None
         self._request = None
         self._task = None
@@ -151,6 +153,11 @@ class RealtimeSpeechRecognizer:
                 elapsed = time.time() - self._last_partial_time
                 if elapsed > 10 and not self._restarting:
                     print("[STT] WATCHDOG: No speech for 10s, forcing restart")
+                    if self._on_no_speech:
+                        try:
+                            self._on_no_speech()
+                        except Exception:
+                            pass
                     self._restarting = True
                     try:
                         if self._task:

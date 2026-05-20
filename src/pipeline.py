@@ -33,6 +33,7 @@ class TranslationPipeline:
             on_partial=self._on_partial,
             on_segment=self._on_segment,
             config=self._config,
+            on_no_speech=self._on_no_speech,
         )
 
         self._capture = SystemAudioCapture(
@@ -119,6 +120,7 @@ class TranslationPipeline:
             on_partial=self._on_partial,
             on_segment=self._on_segment,
             config=self._config,
+            on_no_speech=self._on_no_speech,
         )
 
         if self._realtime_mode:
@@ -175,6 +177,14 @@ class TranslationPipeline:
         if not raw:
             return None
         return resample_s16(raw)
+
+    def _on_no_speech(self):
+        # Ses gelmiyor: kullanıcıya kaynağı oynatmasını/öne getirmesini hatırlat.
+        # Gerçek konuşma gelince _on_partial bu satırı otomatik üzerine yazar.
+        if not self._finalized_text and not self._current_partial:
+            self._overlay.update_original_on_main_thread(
+                "🔇 No audio detected — play or focus your audio source"
+            )
 
     def _on_partial(self, text):
         self._current_partial = text
