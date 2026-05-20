@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.0.1-macOS.dmg">
+  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.1.0-macOS.dmg">
     <img src="https://img.shields.io/badge/⬇_Download_DMG-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download" height="36">
   </a>
   &nbsp;&nbsp;
@@ -70,15 +70,24 @@ System Audio → Speech Recognition → AI Translation → Live Overlay
 - **In-app settings** — provider, API keys, model, TTS, languages — all configurable from the UI
 - **No audio drivers needed** — uses ScreenCaptureKit (macOS 13+)
 - **On-device STT** (default) — speech recognition works without internet; audio never leaves your Mac
-- **Optional realtime mode** — lower latency via cloud audio models (OpenAI Realtime / Gemini Live); audio is streamed to the provider
+- **Optional realtime mode** — lower latency via OpenAI's Realtime Translation model; audio is streamed to the provider
 - **Auto-recovery** — watchdog detects and recovers from stuck states
 - **Menu bar app** — runs quietly with 🌐 icon in menu bar
+
+## What's New in v0.1.0
+
+- **Multi-provider architecture** — pick OpenAI or Google Gemini for translation; switch any time from Settings.
+- **Latest models** — refreshed model list (OpenAI GPT-5.5 / 5.4 mini / 5.4 nano, Gemini 2.5 Flash / Flash-Lite, Gemini 3.5 Flash). The model dropdown updates to match the selected provider.
+- **Optional realtime mode** — stream audio to OpenAI's Realtime Translation model for lower latency, with a clear privacy warning. On-device STT stays the default.
+- **Dynamic system-audio capture** — audio sources opened *after* the app starts are now captured automatically.
+- **Redesigned Settings** — grouped sections, provider-aware fields, dual API keys, and clearer controls.
+- **More robust** — graceful fallback and clear messaging when a provider, key, or connection fails; "no audio detected" hint when the source is silent.
 
 ## Install
 
 ### Option 1: DMG (Recommended)
 
-<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.0.1-macOS.dmg">
+<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.1.0-macOS.dmg">
   <img src="https://img.shields.io/badge/⬇_Download_DMG-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download DMG">
 </a>
 
@@ -175,7 +184,7 @@ This means:
 
 ### Realtime mode (optional)
 
-By default, speech recognition runs **on-device** — your audio never leaves the Mac, only text is sent to the translation provider. For lower latency you can enable **Realtime mode** in Settings, which streams audio directly to a cloud realtime model (OpenAI Realtime or Gemini Live API). This trades privacy for speed: **audio is sent to the provider**. A warning is shown in Settings when you enable it. On-device mode remains the default.
+By default, speech recognition runs **on-device** — your audio never leaves the Mac, only text is sent to the translation provider. For lower latency you can enable **Realtime mode** in Settings (OpenAI provider), which streams audio directly to OpenAI's Realtime Translation model and returns the translation as it speaks. This trades privacy for speed: **audio is sent to the provider**. A warning is shown in Settings when you enable it. On-device mode remains the default.
 
 ## Architecture
 
@@ -215,7 +224,7 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
   "openai_api_key": "sk-...",
   "source_locale": "en-US",
   "target_lang": "tr",
-  "model": "gpt-4o-mini",
+  "model": "gpt-5.4-mini",
   "tts_provider": "piper",
   "tts_voice": "nova",
   "tts_speed": 1.0
