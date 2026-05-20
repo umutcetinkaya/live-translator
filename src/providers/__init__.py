@@ -40,3 +40,19 @@ def get_tts_provider(config):
     if name == "gemini":
         return GeminiTTSProvider(client=_make_gemini_client(config))
     raise ProviderError(f"Bilinmeyen TTS provider'ı: {name}")
+
+
+from providers.realtime_openai import OpenAIRealtimeProvider
+from providers.realtime_gemini import GeminiRealtimeProvider
+
+
+def get_realtime_provider(config):
+    name = config.get("translation_provider", "openai")
+    model = config.get("model", "")
+    if name == "openai":
+        return OpenAIRealtimeProvider(api_key=config.get("openai_api_key", ""),
+                                      model=model)
+    if name == "gemini":
+        return GeminiRealtimeProvider(api_key=config.get("gemini_api_key", ""),
+                                      model=model)
+    raise ProviderError(f"Bilinmeyen realtime provider'ı: {name}")

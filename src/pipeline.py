@@ -13,6 +13,7 @@ from speech_recognizer import RealtimeSpeechRecognizer
 from translator import AITranslator
 from tts import TextToSpeech
 from config import load_config
+from providers import get_realtime_provider
 
 
 class TranslationPipeline:
@@ -46,24 +47,51 @@ class TranslationPipeline:
         self._current_partial = ""
         self._last_tts_text = ""
 
+        self._realtime_mode = self._config.get("realtime_mode", False)
+        self._realtime = None
+        if self._realtime_mode:
+            try:
+                self._realtime = get_realtime_provider(self._config)
+            except Exception as e:
+                print(f"[Pipeline] Realtime kurulamadı, on-device'a düşülüyor: {e}")
+                self._realtime_mode = False
+
     def _full_source(self):
         if self._current_partial:
             return (self._finalized_text + " " + self._current_partial).strip()
         return self._finalized_text
 
+    @property
+    def is_realtime(self):
+        return self._realtime_mode
+
     def start(self):
         print("[Pipeline] Starting...")
-        self._recognizer.start()
+        if self._realtime_mode and self._realtime:
+            try:
+                self._realtime.start(
+                    on_translation=self._overlay.replace_all_text,
+                    on_source=self._overlay.update_original_on_main_thread,
+                )
+            except Exception as e:
+                print(f"[Pipeline] Realtime başlatılamadı, fallback: {e}")
+                self._realtime_mode = False
+                self._realtime = None
+        if not self._realtime_mode:
+            self._recognizer.start()
+            self._translator.start()
         self._capture.start()
-        self._translator.start()
         self._running = True
         print("[Pipeline] Running")
 
     def stop(self):
         self._running = False
         self._capture.stop()
-        self._recognizer.stop()
-        self._translator.stop()
+        if self._realtime:
+            self._realtime.stop()
+        else:
+            self._recognizer.stop()
+            self._translator.stop()
         self._tts.stop()
         print("[Pipeline] Stopped")
 
@@ -110,8 +138,19 @@ class TranslationPipeline:
         return self._tts.toggle()
 
     def _on_audio(self, sample_buffer):
-        if self._running:
+        if not self._running:
+            return
+        if self._realtime_mode and self._realtime:
+            pcm = self._pcm_from_buffer(sample_buffer)
+            if pcm:
+                self._realtime.feed_audio(pcm)
+        else:
             self._recognizer.append_audio_buffer(sample_buffer)
+
+    def _pcm_from_buffer(self, sample_buffer):
+        """ScreenCaptureKit CMSampleBuffer -> 16kHz/16-bit/mono PCM bytes.
+        Gerçek dönüşüm audio_capture formatına bağlı; sonraki adımda doğrulanır."""
+        return getattr(sample_buffer, "pcm_bytes", None)
 
     def _on_partial(self, text):
         self._current_partial = text
