@@ -180,42 +180,96 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     z-index: 100;
     justify-content: center;
     align-items: center;
+    animation: ovFade 0.18s ease;
 }
+@keyframes ovFade { from { opacity: 0; } to { opacity: 1; } }
 #settings-overlay.show { display: flex; }
 #settings-box {
-    background: #1a1a22;
-    border-radius: 12px;
-    padding: 20px;
-    width: 380px;
-    border: 1px solid rgba(255,255,255,0.08);
+    background: linear-gradient(180deg, #1e1e27 0%%, #16161d 100%%);
+    border-radius: 16px;
+    padding: 22px 22px 18px;
+    width: 400px;
+    max-height: 86vh;
+    overflow-y: auto;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+    animation: boxRise 0.22s cubic-bezier(.2,.8,.2,1);
 }
-#settings-box h3 { color: #5cc070; font-size: 14px; margin-bottom: 16px; }
-#settings-box label { color: #999; font-size: 11px; display: block; margin-top: 12px; margin-bottom: 4px; }
+@keyframes boxRise { from { transform: translateY(12px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+#settings-box::-webkit-scrollbar { width: 6px; }
+#settings-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 3px; }
+#settings-box h3 {
+    color: #fff; font-size: 16px; font-weight: 600; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 7px;
+}
+#settings-box .subtitle { color: rgba(255,255,255,0.4); font-size: 11px; margin-bottom: 16px; }
+/* Section cards */
+.section {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 12px 14px 14px;
+    margin-bottom: 12px;
+}
+.section-title {
+    color: #5cc070; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.7px; text-transform: uppercase;
+    margin-bottom: 8px;
+}
+#settings-box label { color: rgba(255,255,255,0.55); font-size: 11px; display: block; margin-top: 11px; margin-bottom: 5px; }
+.section > label:first-of-type, .section .section-title + label { margin-top: 0; }
 #settings-box input, #settings-box select {
     width: 100%%;
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.1);
-    color: #ddd;
+    color: #eee;
     font-size: 13px;
-    padding: 8px 10px;
-    border-radius: 6px;
+    padding: 9px 11px;
+    border-radius: 8px;
     outline: none;
+    transition: border-color 0.15s, background 0.15s;
 }
-#settings-box input:focus, #settings-box select:focus { border-color: #5cc070; }
-#settings-box .btns { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+#settings-box input:hover, #settings-box select:hover { background: rgba(255,255,255,0.09); }
+#settings-box input:focus, #settings-box select:focus {
+    border-color: #5cc070; background: rgba(92,192,112,0.06);
+}
+#settings-box input[type=range] { padding: 0; }
+.hidden { display: none !important; }
+/* Toggle row */
+.toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 4px;
+}
+.toggle-row .tl { color: rgba(255,255,255,0.8); font-size: 12px; }
+.toggle-row .tl small { display: block; color: rgba(255,255,255,0.35); font-size: 10px; margin-top: 1px; }
+.switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.switch input { display: none; }
+.slider {
+    position: absolute; inset: 0; cursor: pointer;
+    background: rgba(255,255,255,0.15); border-radius: 22px; transition: 0.2s;
+}
+.slider:before {
+    content: ""; position: absolute; height: 16px; width: 16px;
+    left: 3px; top: 3px; background: #fff; border-radius: 50%%; transition: 0.2s;
+}
+.switch input:checked + .slider { background: #5cc070; }
+.switch input:checked + .slider:before { transform: translateX(18px); }
+.switch input:disabled + .slider { opacity: 0.35; cursor: not-allowed; }
+#settings-box .btns { display: flex; gap: 10px; margin-top: 18px; }
 #settings-box .btns button {
-    padding: 6px 16px;
-    border-radius: 6px;
-    border: none;
-    font-size: 12px;
-    cursor: pointer;
+    flex: 1; padding: 10px; border-radius: 9px; border: none;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s;
 }
-.btn-save { background: #5cc070; color: #000; font-weight: 600; }
-.btn-cancel { background: rgba(255,255,255,0.08); color: #aaa; }
+.btn-save { background: #5cc070; color: #0a0a0a; }
+.btn-save:hover { background: #6cd47f; }
+.btn-cancel { background: rgba(255,255,255,0.08); color: #bbb; }
+.btn-cancel:hover { background: rgba(255,255,255,0.14); }
 </style>
 </head>
 <body>
@@ -250,48 +304,72 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
 <div id="settings-overlay">
     <div id="settings-box">
         <h3>⚙ Settings</h3>
-        <label>Provider</label>
-        <select id="providerSelect" onchange="onProviderChange()">
-            <option value="openai" %(openai_prov_sel)s>OpenAI</option>
-            <option value="gemini" %(gemini_prov_sel)s>Gemini</option>
-        </select>
-        <label>OpenAI API Key</label>
-        <input type="password" id="openaiKeyInput" value="%(openai_key)s" placeholder="sk-proj-...">
-        <label>Gemini API Key</label>
-        <input type="password" id="geminiKeyInput" value="%(gemini_key)s" placeholder="AIza...">
-        <label>Model</label>
-        <select id="modelSelect"></select>
-        <label>TTS Provider</label>
-        <select id="ttsProvider">
-            <option value="piper" %(piper_sel)s>Piper (offline, free)</option>
-            <option value="openai" %(openai_tts_sel)s>OpenAI TTS (cloud, natural)</option>
-            <option value="gemini" %(gemini_tts_sel)s>Gemini TTS (cloud)</option>
-        </select>
-        <label>OpenAI Voice</label>
-        <select id="ttsVoice">
-            <option value="nova" %(voice_nova)s>Nova (female, warm)</option>
-            <option value="shimmer" %(voice_shimmer)s>Shimmer (female, soft)</option>
-            <option value="alloy" %(voice_alloy)s>Alloy (neutral)</option>
-            <option value="echo" %(voice_echo)s>Echo (male, deep)</option>
-            <option value="fable" %(voice_fable)s>Fable (male, narrator)</option>
-            <option value="onyx" %(voice_onyx)s>Onyx (male, strong)</option>
-        </select>
-        <label>TTS Speed</label>
-        <input type="range" id="ttsSpeed" min="0.5" max="2.0" step="0.1" value="%(tts_speed)s"
-            oninput="document.getElementById('speedVal').textContent=this.value+'x'">
-        <span id="speedVal" style="color:#888;font-size:11px;">%(tts_speed)sx</span>
-        <label style="margin-top:14px;">
-            <input type="checkbox" id="realtimeToggle" %(realtime_checked)s onchange="onRealtimeChange()">
-            Realtime ses modu (düşük gecikme)
-        </label>
-        <div id="realtimeWarn" style="display:%(realtime_warn_display)s;color:#e0a000;font-size:11px;margin-top:6px;line-height:1.4;">
-            ⚠️ Ses buluta gönderilir (gizlilik). On-device STT devre dışı kalır. Değişiklik yeniden başlatınca etkin olur.
+        <div class="subtitle">Translation provider, models and voice</div>
+
+        <div class="section">
+            <div class="section-title">Translation</div>
+            <label>Provider</label>
+            <select id="providerSelect" onchange="onProviderChange()">
+                <option value="openai" %(openai_prov_sel)s>OpenAI</option>
+                <option value="gemini" %(gemini_prov_sel)s>Google Gemini</option>
+            </select>
+            <div id="openaiKeyRow">
+                <label>OpenAI API Key</label>
+                <input type="password" id="openaiKeyInput" value="%(openai_key)s" placeholder="sk-proj-…">
+            </div>
+            <div id="geminiKeyRow">
+                <label>Gemini API Key</label>
+                <input type="password" id="geminiKeyInput" value="%(gemini_key)s" placeholder="AIza…">
+            </div>
+            <label>Model</label>
+            <select id="modelSelect"></select>
         </div>
+
+        <div class="section">
+            <div class="section-title">Text-to-Speech</div>
+            <label>Voice provider</label>
+            <select id="ttsProvider" onchange="onTtsProviderChange()">
+                <option value="piper" %(piper_sel)s>Piper — offline, free</option>
+                <option value="openai" %(openai_tts_sel)s>OpenAI — natural</option>
+                <option value="gemini" %(gemini_tts_sel)s>Gemini — natural</option>
+            </select>
+            <div id="openaiVoiceRow">
+                <label>OpenAI voice</label>
+                <select id="ttsVoice">
+                    <option value="nova" %(voice_nova)s>Nova — female, warm</option>
+                    <option value="shimmer" %(voice_shimmer)s>Shimmer — female, soft</option>
+                    <option value="alloy" %(voice_alloy)s>Alloy — neutral</option>
+                    <option value="echo" %(voice_echo)s>Echo — male, deep</option>
+                    <option value="fable" %(voice_fable)s>Fable — male, narrator</option>
+                    <option value="onyx" %(voice_onyx)s>Onyx — male, strong</option>
+                </select>
+            </div>
+            <label>Speed — <span id="speedVal">%(tts_speed)sx</span></label>
+            <input type="range" id="ttsSpeed" min="0.5" max="2.0" step="0.1" value="%(tts_speed)s"
+                oninput="document.getElementById('speedVal').textContent=this.value+'x'">
+        </div>
+
+        <div class="section">
+            <div class="section-title">Realtime</div>
+            <div class="toggle-row">
+                <span class="tl">Realtime audio mode
+                    <small id="realtimeHint">Lower latency — streams audio to the cloud</small>
+                </span>
+                <label class="switch">
+                    <input type="checkbox" id="realtimeToggle" %(realtime_checked)s onchange="onRealtimeChange()">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div id="realtimeWarn" style="display:%(realtime_warn_display)s;color:#e0a000;font-size:11px;margin-top:8px;line-height:1.4;">
+                ⚠️ Audio is sent to the cloud. On-device STT is disabled. Takes effect after restart.
+            </div>
+        </div>
+
         <div class="btns">
             <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
             <button class="btn-save" onclick="saveSettings()">Save</button>
         </div>
-        <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;color:rgba(255,255,255,0.25);font-size:10px;">
+        <div style="margin-top:14px;text-align:center;color:rgba(255,255,255,0.25);font-size:10px;">
             © 2025 Umut Çetinkaya — <a href="#" style="color:rgba(92,192,112,0.6);text-decoration:none;" onclick="location.href='app://openURL?url=https://umutcetinkaya.com';return false;">umutcetinkaya.com</a>
         </div>
     </div>
@@ -313,11 +391,35 @@ function populateModels() {
         sel.appendChild(o);
     });
 }
-function onProviderChange() { populateModels(); }
+function onProviderChange() {
+    const provider = document.getElementById('providerSelect').value;
+    // İlgili API key alanını göster, diğerini gizle
+    document.getElementById('openaiKeyRow').classList.toggle('hidden', provider !== 'openai');
+    document.getElementById('geminiKeyRow').classList.toggle('hidden', provider !== 'gemini');
+    // Realtime sadece OpenAI'da kullanılabilir; Gemini'de kapat + devre dışı bırak
+    const rt = document.getElementById('realtimeToggle');
+    const hint = document.getElementById('realtimeHint');
+    if (provider === 'gemini') {
+        rt.checked = false;
+        rt.disabled = true;
+        hint.textContent = 'Available with OpenAI provider';
+        document.getElementById('realtimeWarn').style.display = 'none';
+    } else {
+        rt.disabled = false;
+        hint.textContent = 'Lower latency — streams audio to the cloud';
+    }
+    populateModels();
+}
 
 function onRealtimeChange() {
     const on = document.getElementById('realtimeToggle').checked;
     document.getElementById('realtimeWarn').style.display = on ? 'block' : 'none';
+}
+
+function onTtsProviderChange() {
+    // OpenAI voice seçimi yalnızca OpenAI TTS'te anlamlı
+    const tts = document.getElementById('ttsProvider').value;
+    document.getElementById('openaiVoiceRow').classList.toggle('hidden', tts !== 'openai');
 }
 
 function addMessage(text) {
@@ -459,8 +561,12 @@ function saveSettings() {
     closeSettings();
 }
 
-document.addEventListener('DOMContentLoaded', populateModels);
-populateModels();
+function initSettings() {
+    onProviderChange();      // key satırları + realtime durumu + modeller
+    onTtsProviderChange();   // OpenAI voice görünürlüğü
+}
+document.addEventListener('DOMContentLoaded', initSettings);
+initSettings();
 </script>
 </body>
 </html>""" % {
@@ -637,7 +743,8 @@ class TranslationOverlay:
         self._config["tts_provider"] = tts_provider
         self._config["tts_speed"] = float(tts_speed)
         self._config["tts_voice"] = tts_voice
-        self._config["realtime_mode"] = (realtime == "1")
+        # Realtime yalnızca OpenAI'da desteklenir; Gemini'de her zaman kapalı.
+        self._config["realtime_mode"] = (realtime == "1") and (provider == "openai")
         save_config(self._config)
         print(f"[Overlay] Settings saved (provider: {provider}, model: {model})")
         if self._on_settings_change:
