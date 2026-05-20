@@ -280,6 +280,13 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
         <input type="range" id="ttsSpeed" min="0.5" max="2.0" step="0.1" value="%(tts_speed)s"
             oninput="document.getElementById('speedVal').textContent=this.value+'x'">
         <span id="speedVal" style="color:#888;font-size:11px;">%(tts_speed)sx</span>
+        <label style="margin-top:14px;">
+            <input type="checkbox" id="realtimeToggle" %(realtime_checked)s onchange="onRealtimeChange()">
+            Realtime ses modu (düşük gecikme)
+        </label>
+        <div id="realtimeWarn" style="display:%(realtime_warn_display)s;color:#e0a000;font-size:11px;margin-top:6px;line-height:1.4;">
+            ⚠️ Ses buluta gönderilir (gizlilik). On-device STT devre dışı kalır. Değişiklik yeniden başlatınca etkin olur.
+        </div>
         <div class="btns">
             <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
             <button class="btn-save" onclick="saveSettings()">Save</button>
@@ -307,6 +314,11 @@ function populateModels() {
     });
 }
 function onProviderChange() { populateModels(); }
+
+function onRealtimeChange() {
+    const on = document.getElementById('realtimeToggle').checked;
+    document.getElementById('realtimeWarn').style.display = on ? 'block' : 'none';
+}
 
 function addMessage(text) {
     const chat = document.getElementById('chat');
@@ -442,7 +454,8 @@ function saveSettings() {
         + '&model=' + encodeURIComponent(model)
         + '&ttsProvider=' + encodeURIComponent(ttsProvider)
         + '&ttsSpeed=' + encodeURIComponent(ttsSpeed)
-        + '&ttsVoice=' + encodeURIComponent(ttsVoice);
+        + '&ttsVoice=' + encodeURIComponent(ttsVoice)
+        + '&realtime=' + (document.getElementById('realtimeToggle').checked ? '1' : '0');
     closeSettings();
 }
 
@@ -469,6 +482,8 @@ populateModels();
         "voice_onyx": "selected" if config.get("tts_voice") == "onyx" else "",
         "models_json": json.dumps(MODELS),
         "current_model_json": json.dumps(config.get("model", "")),
+        "realtime_checked": "checked" if config.get("realtime_mode") else "",
+        "realtime_warn_display": "block" if config.get("realtime_mode") else "none",
     }
 
 
@@ -509,6 +524,7 @@ class _NavDelegate(NSObject):
                 params.get("ttsProvider", "piper"),
                 params.get("ttsSpeed", "1.0"),
                 params.get("ttsVoice", "nova"),
+                params.get("realtime", "0"),
             )
         elif action == "clear" and o._on_clear:
             o._on_clear()
@@ -612,7 +628,8 @@ class TranslationOverlay:
         self._webview.evaluateJavaScript_completionHandler_(js, None)
 
     def _save_settings(self, provider, openai_key, gemini_key, model,
-                       tts_provider="piper", tts_speed="1.0", tts_voice="nova"):
+                       tts_provider="piper", tts_speed="1.0", tts_voice="nova",
+                       realtime="0"):
         self._config["translation_provider"] = provider
         self._config["openai_api_key"] = openai_key
         self._config["gemini_api_key"] = gemini_key
@@ -620,6 +637,7 @@ class TranslationOverlay:
         self._config["tts_provider"] = tts_provider
         self._config["tts_speed"] = float(tts_speed)
         self._config["tts_voice"] = tts_voice
+        self._config["realtime_mode"] = (realtime == "1")
         save_config(self._config)
         print(f"[Overlay] Settings saved (provider: {provider}, model: {model})")
         if self._on_settings_change:
