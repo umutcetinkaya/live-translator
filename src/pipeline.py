@@ -74,6 +74,10 @@ class TranslationPipeline:
                     on_translation=self._overlay.update_text_on_main_thread,
                     on_source=self._overlay.update_original_on_main_thread,
                 )
+                # Realtime model çeviriye başlamadan birkaç saniye bağlam toplar.
+                self._overlay.update_original_on_main_thread(
+                    "⏳ Realtime mode — collecting context, translation starts shortly…"
+                )
             except Exception as e:
                 print(f"[Pipeline] Realtime başlatılamadı, fallback: {e}")
                 self._realtime = None
@@ -138,6 +142,10 @@ class TranslationPipeline:
                 self._realtime.start(
                     on_translation=self._overlay.update_text_on_main_thread,
                     on_source=self._overlay.update_original_on_main_thread,
+                )
+                # Realtime model çeviriye başlamadan birkaç saniye bağlam toplar.
+                self._overlay.update_original_on_main_thread(
+                    "⏳ Realtime mode — collecting context, translation starts shortly…"
                 )
             else:
                 self._recognizer.start()

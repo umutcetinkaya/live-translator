@@ -20,11 +20,13 @@ def _default_ws_factory(url, headers):
 
 
 class OpenAIRealtimeProvider(RealtimeProvider):
-    def __init__(self, api_key, model, ws_factory=None, target_language="tr"):
+    def __init__(self, api_key, model, ws_factory=None, target_language="tr",
+                 source_language="en"):
         self._api_key = api_key
         self._model = model
         self._ws_factory = ws_factory or _default_ws_factory
         self._target_language = target_language
+        self._source_language = source_language
         self._ws = None
         self._on_translation = None
         self._on_source = None

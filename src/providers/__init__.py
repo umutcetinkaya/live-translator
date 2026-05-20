@@ -52,7 +52,8 @@ def get_realtime_provider(config):
     if name == "openai":
         return OpenAIRealtimeProvider(api_key=config.get("openai_api_key", ""),
                                       model=model,
-                                      target_language=config.get("target_lang", "tr"))
+                                      target_language=config.get("target_lang", "tr"),
+                                      source_language=config.get("source_lang", "en"))
     if name == "gemini":
         return GeminiRealtimeProvider(api_key=config.get("gemini_api_key", ""),
                                       model=model)
