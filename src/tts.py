@@ -1,105 +1,29 @@
-"""Text-to-Speech — Piper (offline) or OpenAI (cloud).
+"""Text-to-Speech orkestratörü — üretimi TTSProvider'a delege eder.
 
-Queue-based: translations are read in order, never skipped.
-Uses AVAudioPlayer (same process) so excludesCurrentProcessAudio filters it.
+Kuyruk-tabanlı: çeviriler sırayla okunur. AVAudioPlayer (aynı process) ile
+oynatılır; excludesCurrentProcessAudio sayesinde geri besleme olmaz.
 """
 
-import os
-import wave
 import threading
-import tempfile
 import time
 import queue
 from config import load_config
-
-# Find models dir — works both from source and .app bundle
-def _find_models_dir():
-    # Try relative to this file
-    for base in [
-        os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        os.path.dirname(os.path.dirname(__file__)) if os.path.dirname(__file__) else None,
-    ]:
-        if base:
-            candidate = os.path.join(base, "models")
-            if os.path.isdir(candidate):
-                return candidate
-    # Try from sys.argv[0] (main.py location)
-    import sys
-    if sys.argv:
-        candidate = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), "models")
-        if os.path.isdir(candidate):
-            return candidate
-    # Try cwd
-    if os.path.isdir("models"):
-        return os.path.abspath("models")
-    return os.path.join(os.path.dirname(__file__), "models")
-
-MODELS_DIR = _find_models_dir()
-
-PIPER_VOICES = {
-    "tr": "tr_TR-dfki-medium",
-    "en": "en_US-amy-medium",
-    "de": "de_DE-thorsten-medium",
-    "fr": "fr_FR-siwis-medium",
-    "es": "es_ES-sharvard-medium",
-    "it": "it_IT-riccardo-x_low",
-    "zh": "zh_CN-huayan-medium",
-    "ru": "ru_RU-denis-medium",
-    "ar": "ar_JO-kareem-medium",
-    "pt": "pt_BR-faber-medium",
-}
+from providers import get_tts_provider
+from providers.base import ProviderError
 
 
 class TextToSpeech:
-
     def __init__(self, config=None):
         self._config = config or load_config()
         self._enabled = False
         self._lang = self._config.get("target_lang", "tr")
-        self._provider = self._config.get("tts_provider", "piper")
-        self._voice_speed = self._config.get("tts_speed", 1.0)
+        self._voice = self._config.get("tts_voice", "nova")
+        self._speed = self._config.get("tts_speed", 1.0)
         self._queue = queue.Queue()
         self._worker = None
         self._running = True
-        self._current_process = None
-        self._piper_voice = None
-        self._openai_client = None
-
-        self._load_provider()
-
-    def _load_provider(self):
-        if self._provider == "piper":
-            self._load_piper()
-        elif self._provider == "openai":
-            self._load_openai()
-
-    def _load_piper(self):
-        model_name = PIPER_VOICES.get(self._lang)
-        if not model_name:
-            self._piper_voice = None
-            return
-        model_path = os.path.join(MODELS_DIR, f"{model_name}.onnx")
-        if not os.path.exists(model_path):
-            self._piper_voice = None
-            return
-        try:
-            from piper import PiperVoice
-            self._piper_voice = PiperVoice.load(model_path)
-            print(f"[TTS] Piper loaded: {model_name}")
-        except Exception as e:
-            print(f"[TTS] Piper error: {e}")
-            self._piper_voice = None
-
-    def _load_openai(self):
-        try:
-            from openai import OpenAI
-            key = self._config.get("openai_api_key", "")
-            if key:
-                self._openai_client = OpenAI(api_key=key)
-                print("[TTS] OpenAI TTS ready")
-        except Exception as e:
-            print(f"[TTS] OpenAI error: {e}")
+        self._current_player = None
+        self._provider = get_tts_provider(self._config)
 
     @property
     def enabled(self):
@@ -111,7 +35,7 @@ class TextToSpeech:
             self._start_worker()
         if not self._enabled:
             self._flush()
-        print(f"[TTS] {'ON' if self._enabled else 'OFF'} ({self._provider})")
+        print(f"[TTS] {'ON' if self._enabled else 'OFF'}")
         return self._enabled
 
     def set_enabled(self, val):
@@ -120,20 +44,14 @@ class TextToSpeech:
             self._start_worker()
 
     def set_language(self, lang_code):
-        if lang_code == self._lang:
-            return
         self._lang = lang_code
-        self._load_provider()
 
     def update_config(self, config):
         self._config = config
-        new_provider = config.get("tts_provider", "piper")
-        new_speed = config.get("tts_speed", 1.0)
-        changed = new_provider != self._provider or new_speed != self._voice_speed
-        self._provider = new_provider
-        self._voice_speed = new_speed
-        if changed:
-            self._load_provider()
+        self._lang = config.get("target_lang", self._lang)
+        self._voice = config.get("tts_voice", self._voice)
+        self._speed = config.get("tts_speed", self._speed)
+        self._provider = get_tts_provider(config)
 
     def speak(self, text):
         if not self._enabled or not text:
@@ -145,7 +63,6 @@ class TextToSpeech:
         self._worker.start()
 
     def _worker_loop(self):
-        tmp_path = os.path.join(tempfile.gettempdir(), "tts_output.wav")
         while self._running:
             try:
                 text = self._queue.get(timeout=1)
@@ -153,50 +70,34 @@ class TextToSpeech:
                 continue
             if not self._enabled:
                 continue
-            try:
-                if self._provider == "openai":
-                    self._speak_openai(text, tmp_path)
-                else:
-                    self._speak_piper(text, tmp_path)
-            except Exception as e:
-                print(f"[TTS] Error: {e}")
+            self._synthesize_and_play(text)
 
-    def _speak_piper(self, text, tmp_path):
-        if not self._piper_voice:
+    def _synthesize_and_play(self, text):
+        try:
+            path = self._provider.synthesize(text, self._lang, self._voice,
+                                             self._speed)
+        except ProviderError as e:
+            print(f"[TTS] {e}")
             return
-        with wave.open(tmp_path, "wb") as f:
-            self._piper_voice.synthesize_wav(text, f)
-        self._play_file(tmp_path)
-
-    def _speak_openai(self, text, tmp_path):
-        if not self._openai_client:
+        except Exception as e:
+            print(f"[TTS] Unexpected: {e}")
             return
-        voice = self._config.get("tts_voice", "nova")
-        response = self._openai_client.audio.speech.create(
-            model="tts-1",
-            voice=voice,
-            input=text,
-            speed=self._voice_speed,
-        )
-        mp3_path = tmp_path.replace(".wav", ".mp3")
-        response.stream_to_file(mp3_path)
-        self._play_file(mp3_path)
+        if path:
+            self._play_file(path)
 
     def _play_file(self, path):
-        """Play via AVAudioPlayer (same process — excludesCurrentProcessAudio filters it)."""
         from AVFoundation import AVAudioPlayer
         from Foundation import NSURL
-
         url = NSURL.fileURLWithPath_(path)
         player, error = AVAudioPlayer.alloc().initWithContentsOfURL_error_(url, None)
         if player and not error:
             player.setVolume_(1.0)
             player.play()
-            self._current_process = player
+            self._current_player = player
             while player.isPlaying() and self._enabled:
                 time.sleep(0.1)
             player.stop()
-            self._current_process = None
+            self._current_player = None
 
     def _flush(self):
         while not self._queue.empty():
@@ -204,12 +105,12 @@ class TextToSpeech:
                 self._queue.get_nowait()
             except queue.Empty:
                 break
-        if self._current_process:
+        if self._current_player:
             try:
-                self._current_process.stop()
+                self._current_player.stop()
             except Exception:
                 pass
-            self._current_process = None
+            self._current_player = None
 
     def stop(self):
         self._enabled = False
