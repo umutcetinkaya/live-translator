@@ -166,9 +166,15 @@ class TranslationPipeline:
             self._recognizer.append_audio_buffer(sample_buffer)
 
     def _pcm_from_buffer(self, sample_buffer):
-        """ScreenCaptureKit CMSampleBuffer -> 16kHz/16-bit/mono PCM bytes.
-        Gerçek dönüşüm audio_capture formatına bağlı; sonraki adımda doğrulanır."""
-        return getattr(sample_buffer, "pcm_bytes", None)
+        """CMSampleBuffer -> 16kHz mono s16 PCM (realtime API formatı).
+
+        audio_capture 44100 Hz mono s16 üretir; burada 16000'e indiriyoruz.
+        Gerçek CMSampleBuffer çıkarımı canlı doğrulanır (RT Task 5)."""
+        from audio_pcm import extract_pcm_from_sample_buffer, resample_s16
+        raw = extract_pcm_from_sample_buffer(sample_buffer)
+        if not raw:
+            return None
+        return resample_s16(raw)
 
     def _on_partial(self, text):
         self._current_partial = text
