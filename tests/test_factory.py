@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from providers import get_translation_provider, get_tts_provider
 from providers.openai import OpenAITranslationProvider, OpenAITTSProvider
-from providers.gemini import GeminiTranslationProvider
+from providers.gemini import GeminiTranslationProvider, GeminiTTSProvider
 from providers.piper import PiperTTSProvider
 from providers.base import ProviderError
 
@@ -28,3 +28,12 @@ def test_piper_tts():
 def test_openai_tts(_):
     cfg = {"tts_provider": "openai", "openai_api_key": "k"}
     assert isinstance(get_tts_provider(cfg), OpenAITTSProvider)
+
+@patch("providers._make_gemini_client", return_value=MagicMock())
+def test_gemini_tts(_):
+    cfg = {"tts_provider": "gemini", "gemini_api_key": "k"}
+    assert isinstance(get_tts_provider(cfg), GeminiTTSProvider)
+
+def test_unknown_tts_provider_raises():
+    with pytest.raises(ProviderError):
+        get_tts_provider({"tts_provider": "nope"})

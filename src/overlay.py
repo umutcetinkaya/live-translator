@@ -487,7 +487,9 @@ class _NavDelegate(NSObject):
             parsed = urllib.parse.urlparse(url)
             action_name = parsed.netloc
             params = dict(urllib.parse.parse_qsl(parsed.query))
-            print(f"[Bridge] {action_name} {params}")
+            # API key'leri loglara sızdırma
+            safe = {k: ("***" if "key" in k.lower() else v) for k, v in params.items()}
+            print(f"[Bridge] {action_name} {safe}")
             self.handleAction_params_(action_name, params)
         else:
             handler(1)  # allow
