@@ -8,14 +8,17 @@ def test_is_realtime_provider():
 
 def test_feed_audio_sends_to_ws():
     ws = MagicMock()
+    ws.recv.return_value = ""  # reader thread'in hot-spin yapmasını önle
     p = OpenAIRealtimeProvider(api_key="k", model="gpt-realtime-translate",
                                ws_factory=lambda *a, **k: ws)
     p.start(on_translation=lambda t: None, on_source=lambda t: None)
     p.feed_audio(b"\x00\x01" * 160)
     assert ws.send.called
+    p.stop()
 
 def test_stop_closes_ws():
     ws = MagicMock()
+    ws.recv.return_value = ""
     p = OpenAIRealtimeProvider(api_key="k", model="gpt-realtime-translate",
                                ws_factory=lambda *a, **k: ws)
     p.start(on_translation=lambda t: None, on_source=lambda t: None)
