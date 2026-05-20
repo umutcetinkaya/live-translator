@@ -27,7 +27,7 @@ from config import (
 
 SCREEN_SAVER_LEVEL = 1000
 WIDTH = 460
-HEIGHT = 660
+HEIGHT = 820
 
 
 def _build_html(config):
@@ -195,7 +195,7 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
     border-radius: 16px;
     padding: 22px 22px 18px;
     width: 400px;
-    max-height: 86vh;
+    max-height: 94vh;
     overflow-y: auto;
     border: 1px solid rgba(255,255,255,0.1);
     box-shadow: 0 24px 60px rgba(0,0,0,0.55);
@@ -214,8 +214,8 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 12px;
-    padding: 12px 14px 14px;
-    margin-bottom: 12px;
+    padding: 10px 14px 12px;
+    margin-bottom: 10px;
 }
 .section-title {
     color: #5cc070; font-size: 10px; font-weight: 700;
