@@ -75,8 +75,8 @@ class TranslationPipeline:
                 )
             except Exception as e:
                 print(f"[Pipeline] Realtime başlatılamadı, fallback: {e}")
-                self._realtime_mode = False
                 self._realtime = None
+                self._realtime_mode = False
         if not self._realtime_mode:
             self._recognizer.start()
             self._translator.start()

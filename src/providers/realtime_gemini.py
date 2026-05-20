@@ -36,7 +36,12 @@ class GeminiRealtimeProvider(RealtimeProvider):
         try:
             self._loop.run_until_complete(self._session_main())
         except Exception as e:
-            print(f"[GeminiRealtime] {e}")
+            print(f"[GeminiRealtime] Oturum sonlandı: {e}")
+        finally:
+            # Oturum öldü: feed_audio'nun ölü session'a göndermesini engelle.
+            # NOT: pipeline'a tam runtime fallback canlı entegrasyon turunda eklenecek.
+            self._running = False
+            self._session = None
 
     async def _session_main(self):
         from google import genai
