@@ -69,7 +69,8 @@ System Audio → Speech Recognition → AI Translation → Live Overlay
 - **Floating overlay** — dark-themed panel, draggable, always on top
 - **In-app settings** — provider, API keys, model, TTS, languages — all configurable from the UI
 - **No audio drivers needed** — uses ScreenCaptureKit (macOS 13+)
-- **On-device STT** — speech recognition works without internet
+- **On-device STT** (default) — speech recognition works without internet; audio never leaves your Mac
+- **Optional realtime mode** — lower latency via cloud audio models (OpenAI Realtime / Gemini Live); audio is streamed to the provider
 - **Auto-recovery** — watchdog detects and recovers from stuck states
 - **Menu bar app** — runs quietly with 🌐 icon in menu bar
 
@@ -162,7 +163,7 @@ Pick a provider in Settings, paste its API key, and the model list updates autom
 Live Translator runs two independent agents in parallel:
 
 1. **Listener** — continuously captures system audio via ScreenCaptureKit and transcribes it on-device using SFSpeechRecognizer
-2. **Translator** — every ~3 seconds, takes the full accumulated transcript and sends it to OpenAI GPT
+2. **Translator** — every ~3 seconds, takes the full accumulated transcript and sends it to your chosen provider (OpenAI or Gemini)
 
 The AI is instructed to **preserve its previous translation** and only **append or refine new content**. The overlay highlights what changed, so you can always follow along.
 
@@ -171,6 +172,10 @@ This means:
 - Incomplete sentences get refined next cycle
 - The translation reads as a coherent, flowing document
 - No disconnected fragments
+
+### Realtime mode (optional)
+
+By default, speech recognition runs **on-device** — your audio never leaves the Mac, only text is sent to the translation provider. For lower latency you can enable **Realtime mode** in Settings, which streams audio directly to a cloud realtime model (OpenAI Realtime or Gemini Live API). This trades privacy for speed: **audio is sent to the provider**. A warning is shown in Settings when you enable it. On-device mode remains the default.
 
 ## Architecture
 
