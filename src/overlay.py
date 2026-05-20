@@ -21,7 +21,7 @@ from WebKit import WKWebView, WKWebViewConfiguration
 from PyObjCTools import AppHelper
 
 from config import (
-    OVERLAY_OPACITY, SOURCE_LANGUAGES, TARGET_LANGUAGES,
+    OVERLAY_OPACITY, SOURCE_LANGUAGES, TARGET_LANGUAGES, MODELS,
     load_config, save_config,
 )
 
@@ -41,8 +41,9 @@ def _build_html(config):
         sel = "selected" if code == config.get("target_lang", "tr") else ""
         target_options += f'<option value="{code}" {sel}>{name}</option>'
 
-    api_key = config.get("openai_api_key", "")
-    masked_key = ("•" * 20 + api_key[-8:]) if len(api_key) > 8 else api_key
+    openai_key = config.get("openai_api_key", "")
+    gemini_key = config.get("gemini_api_key", "")
+    provider = config.get("translation_provider", "openai")
     tts_provider = config.get("tts_provider", "piper")
     tts_speed = config.get("tts_speed", 1.0)
 
@@ -249,26 +250,22 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
 <div id="settings-overlay">
     <div id="settings-box">
         <h3>⚙ Settings</h3>
-        <label>OpenAI API Key</label>
-        <input type="password" id="apiKeyInput" value="%(api_key)s" placeholder="sk-proj-...">
-        <label>Model</label>
-        <select id="modelSelect">
-            <option value="gpt-5" %(gpt5_sel)s>GPT-5 (latest)</option>
-            <option value="gpt-5-mini" %(gpt5mini_sel)s>GPT-5 Mini</option>
-            <option value="gpt-4.1" %(gpt41_sel)s>GPT-4.1</option>
-            <option value="gpt-4.1-mini" %(gpt41mini_sel)s>GPT-4.1 Mini</option>
-            <option value="gpt-4.1-nano" %(gpt41nano_sel)s>GPT-4.1 Nano (cheapest)</option>
-            <option value="gpt-4o" %(gpt4o_sel)s>GPT-4o</option>
-            <option value="gpt-4o-mini" %(gpt4omini_sel)s>GPT-4o Mini</option>
-            <option value="o4-mini" %(o4mini_sel)s>o4-mini (reasoning)</option>
-            <option value="o3-mini" %(o3mini_sel)s>o3-mini (reasoning)</option>
-            <option value="o3" %(o3_sel)s>o3 (reasoning)</option>
-            <option value="o1" %(o1_sel)s>o1 (reasoning)</option>
+        <label>Provider</label>
+        <select id="providerSelect" onchange="onProviderChange()">
+            <option value="openai" %(openai_prov_sel)s>OpenAI</option>
+            <option value="gemini" %(gemini_prov_sel)s>Gemini</option>
         </select>
+        <label>OpenAI API Key</label>
+        <input type="password" id="openaiKeyInput" value="%(openai_key)s" placeholder="sk-proj-...">
+        <label>Gemini API Key</label>
+        <input type="password" id="geminiKeyInput" value="%(gemini_key)s" placeholder="AIza...">
+        <label>Model</label>
+        <select id="modelSelect"></select>
         <label>TTS Provider</label>
         <select id="ttsProvider">
             <option value="piper" %(piper_sel)s>Piper (offline, free)</option>
             <option value="openai" %(openai_tts_sel)s>OpenAI TTS (cloud, natural)</option>
+            <option value="gemini" %(gemini_tts_sel)s>Gemini TTS (cloud)</option>
         </select>
         <label>OpenAI Voice</label>
         <select id="ttsVoice">
@@ -295,6 +292,21 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
 
 <script>
 let firstMsg = true;
+
+const MODELS = %(models_json)s;
+const CURRENT_MODEL = %(current_model_json)s;
+function populateModels() {
+    const provider = document.getElementById('providerSelect').value;
+    const sel = document.getElementById('modelSelect');
+    sel.innerHTML = '';
+    (MODELS[provider] || []).forEach(function(m) {
+        const o = document.createElement('option');
+        o.value = m; o.textContent = m;
+        if (m === CURRENT_MODEL) o.selected = true;
+        sel.appendChild(o);
+    });
+}
+function onProviderChange() { populateModels(); }
 
 function addMessage(text) {
     const chat = document.getElementById('chat');
@@ -417,37 +429,37 @@ function closeSettings() {
 }
 
 function saveSettings() {
-    const key = document.getElementById('apiKeyInput').value;
+    const provider = document.getElementById('providerSelect').value;
+    const openaiKey = document.getElementById('openaiKeyInput').value;
+    const geminiKey = document.getElementById('geminiKeyInput').value;
     const model = document.getElementById('modelSelect').value;
     const ttsProvider = document.getElementById('ttsProvider').value;
     const ttsSpeed = document.getElementById('ttsSpeed').value;
     const ttsVoice = document.getElementById('ttsVoice').value;
-    location.href = 'app://saveSettings?apiKey=' + encodeURIComponent(key)
+    location.href = 'app://saveSettings?provider=' + encodeURIComponent(provider)
+        + '&openaiKey=' + encodeURIComponent(openaiKey)
+        + '&geminiKey=' + encodeURIComponent(geminiKey)
         + '&model=' + encodeURIComponent(model)
         + '&ttsProvider=' + encodeURIComponent(ttsProvider)
         + '&ttsSpeed=' + encodeURIComponent(ttsSpeed)
         + '&ttsVoice=' + encodeURIComponent(ttsVoice);
     closeSettings();
 }
+
+document.addEventListener('DOMContentLoaded', populateModels);
+populateModels();
 </script>
 </body>
 </html>""" % {
         "source_options": source_options,
         "target_options": target_options,
-        "api_key": api_key,
-        "gpt5_sel": "selected" if config.get("model") == "gpt-5" else "",
-        "gpt5mini_sel": "selected" if config.get("model") == "gpt-5-mini" else "",
-        "gpt41_sel": "selected" if config.get("model") == "gpt-4.1" else "",
-        "gpt41mini_sel": "selected" if config.get("model") == "gpt-4.1-mini" else "",
-        "gpt41nano_sel": "selected" if config.get("model") == "gpt-4.1-nano" else "",
-        "gpt4o_sel": "selected" if config.get("model") == "gpt-4o" else "",
-        "gpt4omini_sel": "selected" if config.get("model") == "gpt-4o-mini" else "",
-        "o4mini_sel": "selected" if config.get("model") == "o4-mini" else "",
-        "o3mini_sel": "selected" if config.get("model") == "o3-mini" else "",
-        "o3_sel": "selected" if config.get("model") == "o3" else "",
-        "o1_sel": "selected" if config.get("model") == "o1" else "",
+        "openai_prov_sel": "selected" if provider == "openai" else "",
+        "gemini_prov_sel": "selected" if provider == "gemini" else "",
+        "openai_key": openai_key,
+        "gemini_key": gemini_key,
         "piper_sel": "selected" if tts_provider == "piper" else "",
         "openai_tts_sel": "selected" if tts_provider == "openai" else "",
+        "gemini_tts_sel": "selected" if tts_provider == "gemini" else "",
         "tts_speed": tts_speed,
         "voice_nova": "selected" if config.get("tts_voice") == "nova" else "",
         "voice_shimmer": "selected" if config.get("tts_voice") == "shimmer" else "",
@@ -455,6 +467,8 @@ function saveSettings() {
         "voice_echo": "selected" if config.get("tts_voice") == "echo" else "",
         "voice_fable": "selected" if config.get("tts_voice") == "fable" else "",
         "voice_onyx": "selected" if config.get("tts_voice") == "onyx" else "",
+        "models_json": json.dumps(MODELS),
+        "current_model_json": json.dumps(config.get("model", "")),
     }
 
 
@@ -486,8 +500,10 @@ class _NavDelegate(NSObject):
             o._on_lang_change(params.get("source", "en-US"), params.get("target", "tr"))
         elif action == "saveSettings":
             o._save_settings(
-                params.get("apiKey", ""),
-                params.get("model", "gpt-4o-mini"),
+                params.get("provider", "openai"),
+                params.get("openaiKey", ""),
+                params.get("geminiKey", ""),
+                params.get("model", "gpt-5.4-mini"),
                 params.get("ttsProvider", "piper"),
                 params.get("ttsSpeed", "1.0"),
                 params.get("ttsVoice", "nova"),
@@ -593,14 +609,17 @@ class TranslationOverlay:
         js = f"{func}({escaped})"
         self._webview.evaluateJavaScript_completionHandler_(js, None)
 
-    def _save_settings(self, api_key, model, tts_provider="piper", tts_speed="1.0", tts_voice="nova"):
-        self._config["openai_api_key"] = api_key
+    def _save_settings(self, provider, openai_key, gemini_key, model,
+                       tts_provider="piper", tts_speed="1.0", tts_voice="nova"):
+        self._config["translation_provider"] = provider
+        self._config["openai_api_key"] = openai_key
+        self._config["gemini_api_key"] = gemini_key
         self._config["model"] = model
         self._config["tts_provider"] = tts_provider
         self._config["tts_speed"] = float(tts_speed)
         self._config["tts_voice"] = tts_voice
         save_config(self._config)
-        print(f"[Overlay] Settings saved (model: {model}, tts: {tts_provider}, voice: {tts_voice})")
+        print(f"[Overlay] Settings saved (provider: {provider}, model: {model})")
         if self._on_settings_change:
             self._on_settings_change(self._config)
 
