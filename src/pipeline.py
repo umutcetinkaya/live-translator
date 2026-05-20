@@ -99,8 +99,11 @@ class TranslationPipeline:
         was_running = self._running
         if was_running:
             self._capture.stop()
-            self._recognizer.stop()
-            self._translator.stop()
+            if self._realtime:
+                self._realtime.stop()
+            else:
+                self._recognizer.stop()
+                self._translator.stop()
 
         self._locale = source_locale
         self._config["source_locale"] = source_locale
@@ -118,10 +121,25 @@ class TranslationPipeline:
             config=self._config,
         )
 
+        if self._realtime_mode:
+            # Realtime provider'ı yeni dil/config ile yeniden kur
+            try:
+                self._realtime = get_realtime_provider(self._config)
+            except Exception as e:
+                print(f"[Pipeline] Realtime yeniden kurulamadı, fallback: {e}")
+                self._realtime_mode = False
+                self._realtime = None
+
         if was_running:
-            self._recognizer.start()
             self._capture.start()
-            self._translator.start()
+            if self._realtime_mode and self._realtime:
+                self._realtime.start(
+                    on_translation=self._overlay.replace_all_text,
+                    on_source=self._overlay.update_original_on_main_thread,
+                )
+            else:
+                self._recognizer.start()
+                self._translator.start()
 
     def update_config(self, config):
         self._config = config
