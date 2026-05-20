@@ -8,3 +8,6 @@ pyobjc-framework-CoreAudio>=10.0,<13.0
 pyobjc-framework-WebKit>=10.0,<13.0
 openai>=1.0.0,<3.0
 piper-tts>=1.0.0,<3.0
+
+# Dev/test
+pytest>=8.0
