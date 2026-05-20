@@ -19,3 +19,9 @@ def test_concrete_translation_provider_must_implement_translate_document():
         pass
     with pytest.raises(TypeError):
         Incomplete()
+
+def test_concrete_tts_provider_must_implement_synthesize():
+    class Incomplete(TTSProvider):
+        pass
+    with pytest.raises(TypeError):
+        Incomplete()
