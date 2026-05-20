@@ -19,7 +19,7 @@ import threading
 import collections
 
 
-RESTART_INTERVAL = 50  # seconds (Apple limit ~60s)
+RESTART_INTERVAL = 50
 
 
 class RealtimeSpeechRecognizer:
@@ -38,8 +38,7 @@ class RealtimeSpeechRecognizer:
         self._restarting = False
         self._restart_timer = None
         self._last_partial_time = time.time()
-        # Ring buffer — saves audio during restart gap
-        self._pending_buffers = collections.deque(maxlen=80)  # ~4 seconds
+        self._pending_buffers = collections.deque(maxlen=80)
 
     def _request_authorization(self):
         event = threading.Event()
@@ -108,7 +107,6 @@ class RealtimeSpeechRecognizer:
             self._request, on_result
         )
 
-        # Flush pending buffers from ring buffer
         while self._pending_buffers:
             buf = self._pending_buffers.popleft()
             try:
@@ -116,7 +114,6 @@ class RealtimeSpeechRecognizer:
             except Exception:
                 pass
 
-        # Schedule forced restart before Apple's limit
         if self._restart_timer:
             self._restart_timer.cancel()
         self._restart_timer = threading.Timer(RESTART_INTERVAL, self._force_restart)

@@ -19,7 +19,6 @@ DEFAULTS = {
     "realtime_mode": False,
 }
 
-# Provider başına geçerli modeller (ilk eleman = varsayılan)
 MODELS = {
     "openai": ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5.5"],
     "gemini": ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash"],
@@ -82,7 +81,6 @@ def save_config(config):
         print(f"[Config] Save error: {e}")
 
 
-# Audio capture defaults
 SAMPLE_RATE = 16000
 CHANNEL_COUNT = 1
 DEFAULT_LOCALE = "en-US"

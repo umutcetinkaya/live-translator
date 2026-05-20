@@ -34,7 +34,6 @@ class GeminiTranslationProvider(TranslationProvider):
             raise ProviderError(f"Gemini çeviri hatası: {e}") from e
 
 
-# Gemini TTS çıktısı: 24kHz, 16-bit, mono PCM
 _TTS_RATE = 24000
 _TTS_MODEL = "gemini-2.5-flash-preview-tts"
 

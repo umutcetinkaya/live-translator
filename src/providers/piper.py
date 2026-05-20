@@ -21,7 +21,6 @@ PIPER_VOICES = {
 
 def find_models_dir():
     here = os.path.dirname(os.path.realpath(__file__))
-    # providers/ -> src/ -> repo kökü
     root = os.path.dirname(os.path.dirname(here))
     candidate = os.path.join(root, "models")
     if os.path.isdir(candidate):

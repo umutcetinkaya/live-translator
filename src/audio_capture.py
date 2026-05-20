@@ -45,7 +45,7 @@ class AudioCaptureDelegate(NSObject):
         self._callback = callback
 
     def stream_didOutputSampleBuffer_ofType_(self, stream, sample_buffer, output_type):
-        if output_type != 1:  # 1 = audio
+        if output_type != 1:
             return
         AudioCaptureDelegate._buffer_count += 1
         if AudioCaptureDelegate._buffer_count <= 5 or AudioCaptureDelegate._buffer_count % 100 == 0:
@@ -85,11 +85,6 @@ class SystemAudioCapture:
             apps = content.applications()
             print(f"[AudioCapture] Display: {display.width()}x{display.height()}, Apps: {len(apps)}")
 
-            # Content filter — capture ALL system audio, excluding only our own app.
-            # excludingApplications kullanıyoruz (includingApplications DEĞİL): böylece
-            # capture başladıktan SONRA açılan uygulamaların sesi de otomatik yakalanır.
-            # Statik includingApplications listesi sadece start() anındaki uygulamaları
-            # alır ve sonradan açılan ses kaynaklarını kaçırırdı.
             our_bundle = "com.livetranslator.app"
             excluded_apps = [a for a in apps if str(a.bundleIdentifier()) == our_bundle]
 
@@ -99,33 +94,28 @@ class SystemAudioCapture:
                 )
                 print(f"[AudioCapture] Filter: tüm sistem sesi (excluding {len(excluded_apps)} app)")
             except Exception as e:
-                # Eski API'ye düş (start anındaki uygulamalarla sınırlı)
                 print(f"[AudioCapture] excludingApplications yok ({e}), includingApplications'a düşülüyor")
                 included_apps = [a for a in apps if str(a.bundleIdentifier()) != our_bundle]
                 content_filter = SCContentFilter.alloc().initWithDisplay_includingApplications_exceptingWindows_(
                     display, included_apps, []
                 )
 
-            # Stream configuration
             config = SCStreamConfiguration.alloc().init()
             config.setCapturesAudio_(True)
-            config.setSampleRate_(44100)   # macOS native audio rate
+            config.setSampleRate_(44100)
             config.setChannelCount_(1)
             config.setWidth_(2)
             config.setHeight_(2)
             config.setMinimumFrameInterval_(CoreMedia.CMTimeMake(1, 1))
             config.setExcludesCurrentProcessAudio_(True)
 
-            # Delegate
             self._delegate = AudioCaptureDelegate.alloc().init()
             self._delegate.setCallback_(self._on_audio_buffer)
 
-            # Stream
             self._stream = SCStream.alloc().initWithFilter_configuration_delegate_(
                 content_filter, config, None
             )
 
-            # Add output with a proper dispatch queue (required on macOS 26+)
             try:
                 self._audio_queue = _create_dispatch_queue(b"com.livetranslator.audio")
                 self._stream.addStreamOutput_type_sampleHandlerQueue_error_(
@@ -138,7 +128,6 @@ class SystemAudioCapture:
                     self._delegate, 1, None, None
                 )
 
-            # Start
             def on_start(error):
                 if error:
                     print(f"[AudioCapture] Start error: {error}")
@@ -150,7 +139,6 @@ class SystemAudioCapture:
 
             self._stream.startCaptureWithCompletionHandler_(on_start)
 
-        # Use newer API if available
         try:
             SCShareableContent.getShareableContentExcludingDesktopWindows_onScreenWindowsOnly_completionHandler_(
                 True, True, on_content

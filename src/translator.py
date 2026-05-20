@@ -51,7 +51,6 @@ class AITranslator:
             self._last_sent_source = ""
             self._last_translation = ""
 
-    # Legacy API compatibility
     def translate_chunk(self, text):
         pass
 

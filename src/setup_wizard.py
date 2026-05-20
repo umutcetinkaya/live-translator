@@ -47,7 +47,7 @@ class SetupWizard:
         self._progress = None
         self._status_label = None
         self._step = 0
-        self._result = None  # "launch" or None
+        self._result = None
 
     def run(self):
         """Show wizard, return True if setup completed."""
@@ -92,12 +92,10 @@ class SetupWizard:
             f.setMaximumNumberOfLines_(0)
         return f
 
-    # ── Step 1: Welcome + API Key ──
     def _show_step1(self):
         self._clear()
         cv = self._window.contentView()
 
-        # Step indicator
         cv.addSubview_(self._label(
             NSMakeRect(0, HEIGHT - 40, WIDTH, 20),
             "Step 1 of 3", 11, 0.3,
@@ -105,14 +103,12 @@ class SetupWizard:
             NSTextAlignmentCenter,
         ))
 
-        # Title
         cv.addSubview_(self._label(
             NSMakeRect(30, HEIGHT - 80, WIDTH - 60, 30),
             "Welcome to Live Translator", 22, 0.6,
             NSColor.whiteColor(), NSTextAlignmentCenter,
         ))
 
-        # Description
         cv.addSubview_(self._label(
             NSMakeRect(40, HEIGHT - 150, WIDTH - 80, 50),
             "Translate any audio playing on your Mac in real-time.\nEnter your OpenAI API key to get started.",
@@ -120,14 +116,12 @@ class SetupWizard:
             NSTextAlignmentCenter, True,
         ))
 
-        # API Key label
         cv.addSubview_(self._label(
             NSMakeRect(40, HEIGHT - 185, 200, 20),
             "OpenAI API Key", 12, 0.5,
             NSColor.colorWithWhite_alpha_(0.7, 1.0),
         ))
 
-        # API Key input
         self._api_input = NSSecureTextField.alloc().initWithFrame_(
             NSMakeRect(40, HEIGHT - 215, WIDTH - 80, 28)
         )
@@ -138,14 +132,12 @@ class SetupWizard:
         self._api_input.setBezeled_(True)
         cv.addSubview_(self._api_input)
 
-        # Link
         cv.addSubview_(self._label(
             NSMakeRect(40, HEIGHT - 240, WIDTH - 80, 16),
             "Get your key at platform.openai.com", 11, 0.2,
             NSColor.colorWithWhite_alpha_(0.35, 1.0),
         ))
 
-        # Next button
         btn = NSButton.alloc().initWithFrame_(NSMakeRect(WIDTH - 140, 20, 100, 36))
         btn.setTitle_("Next →")
         btn.setBezelStyle_(NSBezelStyleRounded)
@@ -153,7 +145,6 @@ class SetupWizard:
         btn.setAction_(objc.selector(self._on_next1, signature=b"v@:@"))
         cv.addSubview_(btn)
 
-        # Quit button
         qbtn = NSButton.alloc().initWithFrame_(NSMakeRect(40, 20, 80, 36))
         qbtn.setTitle_("Quit")
         qbtn.setBezelStyle_(NSBezelStyleRounded)
@@ -164,11 +155,9 @@ class SetupWizard:
     def _on_next1(self, sender):
         key = self._api_input.stringValue()
         if not key or len(key) < 10:
-            # Error
             self._api_input.setTextColor_(NSColor.redColor())
             return
 
-        # Save config
         config = {
             "openai_api_key": key,
             "source_locale": "en-US",
@@ -183,7 +172,6 @@ class SetupWizard:
 
         self._show_step2()
 
-    # ── Step 2: Installing ──
     def _show_step2(self):
         self._clear()
         cv = self._window.contentView()
@@ -208,7 +196,6 @@ class SetupWizard:
             NSTextAlignmentCenter, True,
         ))
 
-        # Progress bar
         self._progress = NSProgressIndicator.alloc().initWithFrame_(
             NSMakeRect(40, HEIGHT - 165, WIDTH - 80, 20)
         )
@@ -219,7 +206,6 @@ class SetupWizard:
         self._progress.setIndeterminate_(False)
         cv.addSubview_(self._progress)
 
-        # Status label
         self._status_label = self._label(
             NSMakeRect(40, HEIGHT - 195, WIDTH - 80, 20),
             "Preparing...", 12, 0.3,
@@ -228,7 +214,6 @@ class SetupWizard:
         )
         cv.addSubview_(self._status_label)
 
-        # Start install in background
         threading.Thread(target=self._do_install, daemon=True).start()
 
     def _update_progress(self, value, text):
@@ -245,14 +230,12 @@ class SetupWizard:
         log = os.path.expanduser("~/Library/Logs/LiveTranslator.log")
 
         try:
-            # Step: venv
             self._update_progress(10, "Creating Python environment...")
             subprocess.run(
                 ["python3", "-m", "venv", venv],
                 capture_output=True, timeout=60,
             )
 
-            # Step: pip install
             self._update_progress(25, "Installing packages (this may take a minute)...")
             pip = os.path.join(venv, "bin", "pip")
             req = os.path.join(self._dir, "requirements.txt")
@@ -261,7 +244,6 @@ class SetupWizard:
                 capture_output=True, timeout=300,
             )
 
-            # Step: TTS models
             self._update_progress(70, "Downloading voice models...")
             dl_script = os.path.join(self._dir, "scripts", "download_models.sh")
             if os.path.exists(dl_script):
@@ -273,14 +255,12 @@ class SetupWizard:
 
             self._update_progress(100, "Done!")
 
-            # Show step 3
             from PyObjCTools import AppHelper
             AppHelper.callAfter(self._show_step3)
 
         except Exception as e:
             self._update_progress(0, f"Error: {e}")
 
-    # ── Step 3: Ready ──
     def _show_step3(self):
         self._clear()
         cv = self._window.contentView()
@@ -306,7 +286,6 @@ class SetupWizard:
             NSTextAlignmentCenter, True,
         ))
 
-        # Launch button
         btn = NSButton.alloc().initWithFrame_(NSMakeRect((WIDTH - 140) / 2, 30, 140, 40))
         btn.setTitle_("Launch")
         btn.setBezelStyle_(NSBezelStyleRounded)
@@ -318,7 +297,6 @@ class SetupWizard:
     def _on_launch(self, sender):
         self._result = "launch"
         NSApp.stop_(None)
-        # Post dummy event to unblock run loop
         from AppKit import NSEvent, NSEventTypeApplicationDefined
         e = NSEvent.otherEventWithType_location_modifierFlags_timestamp_windowNumber_context_subtype_data1_data2_(
             NSEventTypeApplicationDefined, (0, 0), 0, 0, 0, None, 0, 0, 0

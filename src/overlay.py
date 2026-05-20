@@ -602,18 +602,16 @@ class _NavDelegate(NSObject):
         url = action.request().URL().absoluteString()
 
         if url.startswith("app://"):
-            handler(0)  # cancel navigation
-            # URL parse: app://action?key=val&key2=val2
+            handler(0)
             import urllib.parse
             parsed = urllib.parse.urlparse(url)
             action_name = parsed.netloc
             params = dict(urllib.parse.parse_qsl(parsed.query))
-            # API key'leri loglara sızdırma
             safe = {k: ("***" if "key" in k.lower() else v) for k, v in params.items()}
             print(f"[Bridge] {action_name} {safe}")
             self.handleAction_params_(action_name, params)
         else:
-            handler(1)  # allow
+            handler(1)
 
     def handleAction_params_(self, action, params):
         o = self._overlay
@@ -700,31 +698,26 @@ class TranslationOverlay:
         self._window.setTitlebarAppearsTransparent_(True)
         self._window.setTitleVisibility_(1)  # hidden
         self._window.setMovable_(True)
-        # Hide window buttons
-        self._window.standardWindowButton_(0).setHidden_(True)  # close
-        self._window.standardWindowButton_(1).setHidden_(True)  # minimize
-        self._window.standardWindowButton_(2).setHidden_(True)  # zoom
-        # fullSizeContentView — HTML extends into titlebar area
+        self._window.standardWindowButton_(0).setHidden_(True)
+        self._window.standardWindowButton_(1).setHidden_(True)
+        self._window.standardWindowButton_(2).setHidden_(True)
         from AppKit import NSWindowStyleMaskFullSizeContentView
         self._window.setStyleMask_(
             self._window.styleMask() | NSWindowStyleMaskFullSizeContentView
         )
 
-        # WKWebView
         config = WKWebViewConfiguration.alloc().init()
         self._webview = WKWebView.alloc().initWithFrame_configuration_(
             NSMakeRect(0, 0, WIDTH, HEIGHT), config
         )
 
-        # Navigation delegate — app:// URL'leri yakalar
         self._nav_delegate = _NavDelegate.alloc().init()
         self._nav_delegate._overlay = self
         self._webview.setNavigationDelegate_(self._nav_delegate)
         self._webview.setValue_forKey_(False, "drawsBackground")
         self._window.setContentView_(self._webview)
-        self._window.setMovableByWindowBackground_(False)  # Drag handled via JS bridge
+        self._window.setMovableByWindowBackground_(False)
 
-        # Load HTML
         html = _build_html(self._config)
         self._webview.loadHTMLString_baseURL_(html, None)
 
@@ -743,14 +736,11 @@ class TranslationOverlay:
         self._config["tts_provider"] = tts_provider
         self._config["tts_speed"] = float(tts_speed)
         self._config["tts_voice"] = tts_voice
-        # Realtime yalnızca OpenAI'da desteklenir; Gemini'de her zaman kapalı.
         self._config["realtime_mode"] = (realtime == "1") and (provider == "openai")
         save_config(self._config)
         print(f"[Overlay] Settings saved (provider: {provider}, model: {model})")
         if self._on_settings_change:
             self._on_settings_change(self._config)
-
-    # ── Public ──
 
     def show(self):
         if self._window:
@@ -777,7 +767,6 @@ class TranslationOverlay:
             "appendMessage:", text, False
         )
 
-    # ── Drag ──
     _drag_start_x = 0
     _drag_start_y = 0
     _drag_origin_x = 0
@@ -793,7 +782,7 @@ class TranslationOverlay:
     def _drag_move(self, x, y):
         from AppKit import NSPoint
         dx = x - self._drag_start_x
-        dy = self._drag_start_y - y  # macOS y-axis is inverted
+        dy = self._drag_start_y - y
         new_origin = NSPoint(self._drag_origin_x + dx, self._drag_origin_y + dy)
         self._window.setFrameOrigin_(new_origin)
 

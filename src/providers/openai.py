@@ -33,9 +33,6 @@ class OpenAITranslationProvider(TranslationProvider):
     def translate_document(self, source, prev_translation, target_lang, model):
         if not self._client:
             raise ProviderError("OpenAI: API key yok")
-        # Modern modeller (o-serisi reasoning + GPT-5+) eski chat parametrelerini
-        # reddeder: max_tokens yerine max_completion_tokens ister ve temperature/
-        # system rolünü desteklemez. Eski modeller (gpt-4*) klasik parametreleri ister.
         modern = model.startswith("o") or model.startswith("gpt-5")
         system = SYSTEM_PROMPT.replace("{target_lang}", target_lang)
         user_msg = f"Full transcript:\n\n{source}"

@@ -56,5 +56,6 @@ def get_realtime_provider(config):
                                       source_language=config.get("source_lang", "en"))
     if name == "gemini":
         return GeminiRealtimeProvider(api_key=config.get("gemini_api_key", ""),
-                                      model=model)
+                                      model=model,
+                                      target_language=config.get("target_lang", "tr"))
     raise ProviderError(f"Bilinmeyen realtime provider'ı: {name}")

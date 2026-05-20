@@ -10,7 +10,6 @@ import json
 import threading
 from providers.base import RealtimeProvider, ProviderError
 
-# GA Realtime Translation: özel çeviri endpoint'i (normal /v1/realtime DEĞİL).
 _URL = "wss://api.openai.com/v1/realtime/translations"
 
 
@@ -39,7 +38,6 @@ class OpenAIRealtimeProvider(RealtimeProvider):
             raise ProviderError("OpenAI Realtime: API key yok")
         self._on_translation = on_translation
         self._on_source = on_source
-        # GA Realtime: OpenAI-Beta header KULLANILMAZ. Model query'de verilir.
         headers = {"Authorization": f"Bearer {self._api_key}"}
         url = f"{_URL}?model={self._model}"
         self._ws = self._ws_factory(url, headers)
@@ -53,7 +51,6 @@ class OpenAIRealtimeProvider(RealtimeProvider):
         ws = self._ws
         if not ws:
             return
-        # Çeviri oturumu: kaynak otomatik algılanır, sadece hedef dil verilir.
         cfg = {
             "type": "session.update",
             "session": {
@@ -81,8 +78,6 @@ class OpenAIRealtimeProvider(RealtimeProvider):
                 "type": "session.input_audio_buffer.append", "audio": b64,
             }))
         except Exception as e:
-            # Kopuk/kapalı socket'e yazma uygulamayı çökertmemeli.
-            # feed_audio native dispatch thread'inden çağrılır; hatayı burada yut.
             print(f"[OpenAIRealtime] Bağlantı koptu, ses gönderilemedi: {e}")
             self._close()
 
@@ -101,7 +96,6 @@ class OpenAIRealtimeProvider(RealtimeProvider):
             try:
                 raw = self._ws.recv()
             except Exception:
-                # Bağlantı koptu — döngüden çık (stop/feed_audio temizler).
                 break
             if not raw:
                 continue
@@ -110,8 +104,6 @@ class OpenAIRealtimeProvider(RealtimeProvider):
             except Exception:
                 continue
             etype = evt.get("type", "")
-            # Çeviri delta (parça) olarak gelir. Cümle sonu (.?!…) görünce tam cümleyi
-            # bir balon olarak gönderip biriktiriciyi sıfırlarız (akışkan değil, balon).
             if etype == "session.output_transcript.delta":
                 delta = evt.get("delta", "")
                 if delta:
@@ -119,7 +111,6 @@ class OpenAIRealtimeProvider(RealtimeProvider):
                     self._flush_sentences()
             elif etype in ("session.output_transcript.done",
                            "session.output_transcript.completed"):
-                # Segment bitti: kalan metni balon olarak gönder.
                 self._emit_remaining()
             elif etype == "session.input_audio_transcription.delta":
                 delta = evt.get("delta", "")

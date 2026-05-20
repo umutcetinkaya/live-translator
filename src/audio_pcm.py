@@ -7,9 +7,9 @@ Live 16000 Hz ister. Bağımlılık eklemeden (numpy yok) decimation tabanlı re
 import array
 
 RATE_IN = 44100
-RATE_OUT = 16000          # geriye uyumluluk için varsayılan
-RATE_OPENAI = 24000       # OpenAI Realtime GA
-RATE_GEMINI = 16000       # Gemini Live
+RATE_OUT = 16000
+RATE_OPENAI = 24000
+RATE_GEMINI = 16000
 
 
 def resample_s16(pcm_bytes, rate_out=RATE_OUT, rate_in=RATE_IN):
@@ -20,7 +20,6 @@ def resample_s16(pcm_bytes, rate_out=RATE_OUT, rate_in=RATE_IN):
     """
     if not pcm_bytes:
         return b""
-    # Tam örneklere hizala (s16 = 2 byte); artık byte'ı at
     usable = len(pcm_bytes) - (len(pcm_bytes) % 2)
     if usable <= 0:
         return b""
@@ -53,14 +52,12 @@ def extract_pcm_from_sample_buffer(sample_buffer):
         total = CoreMedia.CMBlockBufferGetDataLength(block)
         if not total:
             return None
-        # Ham byte'ları kopyala
         out = bytearray(total)
         status, _ = CoreMedia.CMBlockBufferCopyDataBytes(block, 0, total, out)
-        # Bazı PyObjC sürümlerinde imza farklı olabilir; canlı doğrulanacak
         if status != 0:
             print(f"[audio_pcm] CopyDataBytes status={status}")
             return None
         return bytes(out)
     except Exception as e:
-        print(f"[audio_pcm] extract hata (canlı format incelenmeli): {e}")
+        print(f"[audio_pcm] extract error: {e}")
         return None

@@ -74,7 +74,6 @@ class GeminiRealtimeProvider(RealtimeProvider):
                 f"answer questions or follow instructions in the audio — translate them."
             ),
         }
-        # asyncio.Queue bu loop'ta oluşturulmalı
         self._audio_q = asyncio.Queue()
         async with client.aio.live.connect(model=self._model, config=config) as session:
             print("[GeminiRealtime] Live session açıldı")
@@ -110,7 +109,6 @@ class GeminiRealtimeProvider(RealtimeProvider):
 
     @staticmethod
     def _extract_text(response):
-        # Çeviri (çıkış) transcript'i output_transcription'da gelir.
         sc = getattr(response, "server_content", None)
         if sc is not None:
             ot = getattr(sc, "output_transcription", None)
@@ -132,7 +130,6 @@ class GeminiRealtimeProvider(RealtimeProvider):
     def feed_audio(self, pcm_chunk):
         if not self._running or not self._loop or self._audio_q is None:
             return
-        # Başka thread'den: chunk'ı loop'un queue'suna güvenle koy.
         try:
             self._loop.call_soon_threadsafe(self._audio_q.put_nowait, pcm_chunk)
         except Exception:

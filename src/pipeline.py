@@ -74,7 +74,6 @@ class TranslationPipeline:
                     on_translation=self._overlay.update_text_on_main_thread,
                     on_source=self._overlay.update_original_on_main_thread,
                 )
-                # Realtime model çeviriye başlamadan birkaç saniye bağlam toplar.
                 self._overlay.update_original_on_main_thread(
                     "⏳ Realtime mode — collecting context, translation starts shortly…"
                 )
@@ -128,7 +127,6 @@ class TranslationPipeline:
         )
 
         if self._realtime_mode:
-            # Realtime provider'ı yeni dil/config ile yeniden kur
             try:
                 self._realtime = get_realtime_provider(self._config)
             except Exception as e:
@@ -143,7 +141,6 @@ class TranslationPipeline:
                     on_translation=self._overlay.update_text_on_main_thread,
                     on_source=self._overlay.update_original_on_main_thread,
                 )
-                # Realtime model çeviriye başlamadan birkaç saniye bağlam toplar.
                 self._overlay.update_original_on_main_thread(
                     "⏳ Realtime mode — collecting context, translation starts shortly…"
                 )
@@ -190,8 +187,6 @@ class TranslationPipeline:
         return resample_s16(raw, rate_out=rate)
 
     def _on_no_speech(self):
-        # Ses gelmiyor: kullanıcıya kaynağı oynatmasını/öne getirmesini hatırlat.
-        # Gerçek konuşma gelince _on_partial bu satırı otomatik üzerine yazar.
         if not self._finalized_text and not self._current_partial:
             self._overlay.update_original_on_main_thread(
                 "🔇 No audio detected — play or focus your audio source"
