@@ -6,15 +6,32 @@ import os
 CONFIG_PATH = os.path.expanduser("~/.live-translator.json")
 
 DEFAULTS = {
+    "translation_provider": "openai",
     "openai_api_key": "",
+    "gemini_api_key": "",
     "source_lang": "en",
     "source_locale": "en-US",
     "target_lang": "tr",
-    "model": "gpt-4o-mini",
+    "model": "gpt-5.4-mini",
     "tts_provider": "piper",
     "tts_voice": "nova",
     "tts_speed": 1.0,
+    "realtime_mode": False,
 }
+
+# Provider başına geçerli modeller (ilk eleman = varsayılan)
+MODELS = {
+    "openai": ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5.5"],
+    "gemini": ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash"],
+}
+
+
+def normalize_model(model, provider):
+    """Geçersiz/eski model isimlerini provider varsayılanına düşür."""
+    valid = MODELS.get(provider, [])
+    if model in valid:
+        return model
+    return valid[0] if valid else model
 
 SOURCE_LANGUAGES = {
     "English": "en-US",

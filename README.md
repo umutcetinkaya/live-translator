@@ -63,10 +63,11 @@ System Audio → Speech Recognition → AI Translation → Live Overlay
 - **12 target languages** — translate into any supported language
 - **Context-aware AI** — maintains full conversation context, never loses track
 - **Live document model** — translation grows like a live document, new parts highlighted
-- **Text-to-Speech** — hear translations read aloud (Piper offline or OpenAI voices)
-- **Multiple AI models** — GPT-5, GPT-4.1, GPT-4o, o4-mini, o3, and more
+- **Text-to-Speech** — hear translations read aloud (Piper offline, OpenAI or Gemini voices)
+- **Multi-provider** — choose OpenAI or Google Gemini; just add your API key
+- **Latest AI models** — GPT-5.5, GPT-5.4 mini/nano, Gemini 2.5 Flash, Gemini 3.5 Flash, and more
 - **Floating overlay** — dark-themed panel, draggable, always on top
-- **In-app settings** — API key, model, TTS, languages — all configurable from the UI
+- **In-app settings** — provider, API keys, model, TTS, languages — all configurable from the UI
 - **No audio drivers needed** — uses ScreenCaptureKit (macOS 13+)
 - **On-device STT** — speech recognition works without internet
 - **Auto-recovery** — watchdog detects and recovers from stuck states
@@ -130,24 +131,29 @@ make run        # Launch
 |----------|------|------|
 | **Piper** (default) | Free, offline, fast | Robotic voice |
 | **OpenAI TTS** | Natural voices (Nova, Shimmer, Alloy, Echo, Fable, Onyx) | Costs money |
+| **Gemini TTS** | Natural voices via Gemini | Costs money |
 
 TTS plays through the same process — the app's own voice is automatically filtered from capture. No feedback loops.
 
 ## Supported Models
 
+Pick a provider in Settings, paste its API key, and the model list updates automatically.
+
+**OpenAI**
+
 | Model | Speed | Cost | Best For |
 |-------|-------|------|----------|
-| GPT-4o Mini | ⚡ Fastest | ¢ | Daily use |
-| GPT-4.1 Nano | ⚡ Fastest | ¢ | Budget |
-| GPT-4.1 Mini | 🚀 Fast | $ | Balanced |
-| GPT-5 Mini | 🚀 Fast | $ | Latest |
-| GPT-4o | 🚀 Fast | $$ | Quality |
-| GPT-4.1 | 🚀 Fast | $$ | Quality |
-| GPT-5 | 🚀 Fast | $$ | Latest + Quality |
-| o4-mini | 🐢 Slow | $$ | Reasoning |
-| o3-mini | 🐢 Slow | $$ | Reasoning |
-| o3 | 🐢 Slowest | $$$ | Deep reasoning |
-| o1 | 🐢 Slowest | $$$ | Deep reasoning |
+| GPT-5.4 mini | ⚡ Fastest | ¢ | Daily use (default) |
+| GPT-5.4 nano | ⚡ Fastest | ¢ | Budget |
+| GPT-5.5 | 🚀 Fast | $$ | Latest + Quality |
+
+**Google Gemini**
+
+| Model | Speed | Cost | Best For |
+|-------|-------|------|----------|
+| Gemini 2.5 Flash | ⚡ Fastest | ¢ | Daily use |
+| Gemini 2.5 Flash-Lite | ⚡ Fastest | ¢ | Budget |
+| Gemini 3.5 Flash | 🚀 Fast | $$ | Latest + Quality |
 
 > **Recommendation:** GPT-4o Mini or GPT-4.1 Nano for real-time translation (fast + cheap).
 
@@ -218,7 +224,7 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
 | "Damaged and can't be opened" | Run `xattr -cr /Applications/Live\ Translator.app` |
 | No audio detected | Grant Screen & System Audio Recording permission, restart app |
 | STT stops working | Built-in watchdog auto-recovers within 10 seconds |
-| Translation not appearing | Check OpenAI API key in Settings |
+| Translation not appearing | Check your provider's API key in Settings (OpenAI or Gemini) |
 | TTS not working | Check TTS provider in Settings |
 | App not in dock | By design — it's a menu bar app (🌐) |
 
