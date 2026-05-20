@@ -61,3 +61,6 @@ dist/
 /tmp/
 *.wav
 *.mp3
+
+# Dokümantasyon ve çalışma artefaktları (superpowers spec/plan)
+docs/
