@@ -25,6 +25,31 @@ def test_stop_closes_ws():
     p.stop()
     assert ws.close.called
 
+def test_output_transcript_delta_emits_complete_sentences():
+    # Çeviri delta'ları cümle sonuna gelince balon olarak emit edilmeli.
+    ws = MagicMock()
+    ws.recv.return_value = ""
+    p = OpenAIRealtimeProvider(api_key="k", model="gpt-realtime-translate",
+                               ws_factory=lambda *a, **k: ws)
+    sentences = []
+    p._on_translation = sentences.append
+    # delta'ları elle besle (gerçek event akışını taklit)
+    for d in ["Mer", "haba", " dünya.", " Nasıl", "sın", "?"]:
+        p._translation += d
+        p._flush_sentences()
+    assert sentences == ["Merhaba dünya.", "Nasılsın?"]
+
+def test_emit_remaining_flushes_partial():
+    ws = MagicMock()
+    p = OpenAIRealtimeProvider(api_key="k", model="m",
+                               ws_factory=lambda *a, **k: ws)
+    out = []
+    p._on_translation = out.append
+    p._translation = "yarım cümle"
+    p._emit_remaining()
+    assert out == ["yarım cümle"]
+    assert p._translation == ""
+
 def test_feed_audio_swallows_send_error_and_closes():
     # Kapalı/kopuk socket'e yazınca uygulama ÇÖKMEMELİ (send hata fırlatır).
     ws = MagicMock()

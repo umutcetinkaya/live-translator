@@ -1,21 +1,22 @@
 """Saf-Python ses yardımcıları — realtime köprüsü için PCM dönüşümü.
 
-ScreenCaptureKit 44100 Hz mono s16 üretir; realtime API'ler 16000 Hz mono s16
-ister. Bağımlılık eklemeden (numpy yok) basit decimation tabanlı downsample.
+ScreenCaptureKit 44100 Hz mono s16 üretir. OpenAI Realtime GA 24000 Hz, Gemini
+Live 16000 Hz ister. Bağımlılık eklemeden (numpy yok) decimation tabanlı resample.
 """
 
 import array
 
 RATE_IN = 44100
-RATE_OUT = 16000
+RATE_OUT = 16000          # geriye uyumluluk için varsayılan
+RATE_OPENAI = 24000       # OpenAI Realtime GA
+RATE_GEMINI = 16000       # Gemini Live
 
 
-def resample_s16(pcm_bytes):
-    """44100 Hz mono s16le -> 16000 Hz mono s16le (nearest-sample decimation).
+def resample_s16(pcm_bytes, rate_out=RATE_OUT, rate_in=RATE_IN):
+    """mono s16le -> mono s16le (nearest-sample resample, varsayılan 44100->16000).
 
     Basit ama bağımlılıksız: her çıkış örneği için en yakın giriş örneğini seçer.
-    Kaliteli değil ama realtime STT için yeterli; gerçek kalite gerekirse
-    AVAudioConverter'a geçilebilir.
+    Kaliteli değil ama realtime için yeterli; kalite gerekirse AVAudioConverter.
     """
     if not pcm_bytes:
         return b""
@@ -26,7 +27,7 @@ def resample_s16(pcm_bytes):
     samples = array.array("h")
     samples.frombytes(pcm_bytes[:usable])
     n_in = len(samples)
-    n_out = int(n_in * RATE_OUT / RATE_IN)
+    n_out = int(n_in * rate_out / rate_in)
     if n_out <= 0:
         return b""
     out = array.array("h", bytes(2 * n_out))

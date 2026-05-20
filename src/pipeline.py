@@ -71,7 +71,7 @@ class TranslationPipeline:
         if self._realtime_mode and self._realtime:
             try:
                 self._realtime.start(
-                    on_translation=self._overlay.replace_all_text,
+                    on_translation=self._overlay.update_text_on_main_thread,
                     on_source=self._overlay.update_original_on_main_thread,
                 )
             except Exception as e:
@@ -136,7 +136,7 @@ class TranslationPipeline:
             self._capture.start()
             if self._realtime_mode and self._realtime:
                 self._realtime.start(
-                    on_translation=self._overlay.replace_all_text,
+                    on_translation=self._overlay.update_text_on_main_thread,
                     on_source=self._overlay.update_original_on_main_thread,
                 )
             else:
@@ -168,15 +168,18 @@ class TranslationPipeline:
             self._recognizer.append_audio_buffer(sample_buffer)
 
     def _pcm_from_buffer(self, sample_buffer):
-        """CMSampleBuffer -> 16kHz mono s16 PCM (realtime API formatı).
+        """CMSampleBuffer -> realtime API formatında mono s16 PCM.
 
-        audio_capture 44100 Hz mono s16 üretir; burada 16000'e indiriyoruz.
-        Gerçek CMSampleBuffer çıkarımı canlı doğrulanır (RT Task 5)."""
-        from audio_pcm import extract_pcm_from_sample_buffer, resample_s16
+        audio_capture 44100 Hz üretir. OpenAI Realtime GA 24kHz, Gemini Live 16kHz
+        ister; provider'a göre hedef örnekleme hızını seçeriz."""
+        from audio_pcm import (extract_pcm_from_sample_buffer, resample_s16,
+                               RATE_OPENAI, RATE_GEMINI)
         raw = extract_pcm_from_sample_buffer(sample_buffer)
         if not raw:
             return None
-        return resample_s16(raw)
+        provider = self._config.get("translation_provider", "openai")
+        rate = RATE_GEMINI if provider == "gemini" else RATE_OPENAI
+        return resample_s16(raw, rate_out=rate)
 
     def _on_no_speech(self):
         # Ses gelmiyor: kullanıcıya kaynağı oynatmasını/öne getirmesini hatırlat.
