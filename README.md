@@ -39,7 +39,7 @@ It's not a word-by-word subtitler. It uses a **live document model** — the AI 
 
 ```
 System Audio → Speech Recognition → AI Translation → Live Overlay
-(ScreenCaptureKit)  (SFSpeechRecognizer)  (OpenAI GPT)     (WebKit Panel)
+(ScreenCaptureKit)  (SFSpeechRecognizer)  (your provider)  (WebKit Panel)
 ```
 
 ## Demo
@@ -64,8 +64,9 @@ System Audio → Speech Recognition → AI Translation → Live Overlay
 - **Context-aware AI** — maintains full conversation context, never loses track
 - **Live document model** — translation grows like a live document, new parts highlighted
 - **Text-to-Speech** — hear translations read aloud (Piper offline, OpenAI or Gemini voices)
-- **Multi-provider** — choose OpenAI or Google Gemini; just add your API key
-- **Latest AI models** — GPT-5.5, GPT-5.4 mini/nano, Gemini 2.5 Flash, Gemini 3.5 Flash, and more
+- **Multi-provider** — choose OpenAI, Google Gemini, or Anthropic Claude; just add your API key
+- **Latest AI models** — GPT-5.5, GPT-5.4 mini/nano, Gemini 2.5 / 3.5 Flash, Claude Haiku 4.5 / Sonnet 5 / Opus 5
+- **Bounded context** — a sliding window keeps cost and latency flat on long sessions instead of growing with the transcript
 - **Floating overlay** — dark-themed panel, draggable, always on top
 - **In-app settings** — provider, API keys, model, TTS, languages — all configurable from the UI
 - **No audio drivers needed** — uses ScreenCaptureKit (macOS 13+)
@@ -93,7 +94,7 @@ System Audio → Speech Recognition → AI Translation → Live Overlay
 
 1. Download → Open DMG → Drag to **Applications**
 2. Launch → Setup wizard guides you through everything
-3. Enter your **OpenAI API key** ([get one here](https://platform.openai.com))
+3. Enter an API key for your provider — [OpenAI](https://platform.openai.com), [Gemini](https://aistudio.google.com/apikey), or [Anthropic](https://console.anthropic.com)
 4. Grant **Screen & System Audio Recording** permission when prompted
 5. Play any audio → translations appear live
 
@@ -119,7 +120,7 @@ make run        # Launch
 ## Quick Start
 
 1. Launch → floating panel appears + 🌐 in menu bar
-2. Click **⚙ Settings** → enter your OpenAI API key
+2. Click **⚙ Settings** → pick a provider and enter its API key
 3. Select **source language** (what's being spoken) and **target language** (what you want to read)
 4. Play any audio → translations appear in real-time
 5. New translations are **highlighted** so you always know what just changed
@@ -165,14 +166,24 @@ Pick a provider in Settings, paste its API key, and the model list updates autom
 | Gemini 2.5 Flash-Lite | ⚡ Fastest | ¢ | Budget |
 | Gemini 3.5 Flash | 🚀 Fast | $$ | Latest + Quality |
 
-> **Recommendation:** GPT-5.4 mini (OpenAI) or Gemini 2.5 Flash (Google) for real-time translation — fast + cheap.
+**Anthropic Claude**
+
+| Model | Speed | Cost | Best For |
+|-------|-------|------|----------|
+| Claude Haiku 4.5 | ⚡ Fastest | ¢ | Daily use (default) |
+| Claude Sonnet 5 | 🚀 Fast | $$ | Higher quality |
+| Claude Opus 5 | 🐢 Moderate | $$$ | Maximum quality |
+
+> **Note:** Claude is text-translation only — Anthropic has no audio API, so realtime mode is unavailable when Claude is selected. On-device STT feeds it instead.
+
+> **Recommendation:** GPT-5.4 mini (OpenAI), Gemini 2.5 Flash (Google), or Claude Haiku 4.5 (Anthropic) for real-time translation — fast + cheap.
 
 ## How It Works
 
 Live Translator runs two independent agents in parallel:
 
 1. **Listener** — continuously captures system audio via ScreenCaptureKit and transcribes it on-device using SFSpeechRecognizer
-2. **Translator** — every ~3 seconds, takes the full accumulated transcript and sends it to your chosen provider (OpenAI or Gemini)
+2. **Translator** — every ~3 seconds, sends a sliding window of the accumulated transcript to your chosen provider (OpenAI, Gemini, or Anthropic)
 
 The AI is instructed to **preserve its previous translation** and only **append or refine new content**. The overlay highlights what changed, so you can always follow along.
 
@@ -194,7 +205,8 @@ live-translator/
 ├── src/
 │   ├── audio_capture.py         # ScreenCaptureKit system audio
 │   ├── speech_recognizer.py     # SFSpeechRecognizer + watchdog + ring buffer
-│   ├── translator.py            # OpenAI live document translation
+│   ├── translator.py            # Live document translation + sliding window
+│   ├── providers/               # openai · gemini · claude · piper
 │   ├── pipeline.py              # Listener + Translator orchestrator
 │   ├── overlay.py               # WebKit floating panel (HTML/CSS/JS)
 │   ├── tts.py                   # Piper (offline) / OpenAI TTS
@@ -221,15 +233,21 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
 
 ```json
 {
+  "translation_provider": "openai",
   "openai_api_key": "sk-...",
+  "gemini_api_key": "",
+  "anthropic_api_key": "",
   "source_locale": "en-US",
   "target_lang": "tr",
   "model": "gpt-5.4-mini",
   "tts_provider": "piper",
   "tts_voice": "nova",
-  "tts_speed": 1.0
+  "tts_speed": 1.0,
+  "context_window_words": 1200
 }
 ```
+
+`context_window_words` caps how much transcript is sent per translation cycle. The previous translation carries earlier context forward, so raising it buys little; lowering it cuts cost and latency further.
 
 ## Troubleshooting
 
@@ -238,7 +256,8 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
 | "Damaged and can't be opened" | Run `xattr -cr /Applications/Live\ Translator.app` |
 | No audio detected | Grant Screen & System Audio Recording permission, restart app |
 | STT stops working | Built-in watchdog auto-recovers within 10 seconds |
-| Translation not appearing | Check your provider's API key in Settings (OpenAI or Gemini) |
+| Translation not appearing | Check your provider's API key in Settings (OpenAI, Gemini, or Anthropic) |
+| Realtime toggle greyed out | Only OpenAI supports realtime — Anthropic has no audio API |
 | TTS not working | Check TTS provider in Settings |
 | App not in dock | By design — it's a menu bar app (🌐) |
 
@@ -246,7 +265,7 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
 
 - **macOS 13 (Ventura)** or later
 - **Python 3.11+** (auto-installed via setup wizard if missing)
-- **OpenAI API key** ([get one here](https://platform.openai.com))
+- **An API key** from [OpenAI](https://platform.openai.com), [Google Gemini](https://aistudio.google.com/apikey), or [Anthropic](https://console.anthropic.com)
 
 ---
 
