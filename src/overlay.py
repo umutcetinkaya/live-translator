@@ -43,6 +43,7 @@ def _build_html(config):
 
     openai_key = config.get("openai_api_key", "")
     gemini_key = config.get("gemini_api_key", "")
+    anthropic_key = config.get("anthropic_api_key", "")
     provider = config.get("translation_provider", "openai")
     tts_provider = config.get("tts_provider", "piper")
     tts_speed = config.get("tts_speed", 1.0)
@@ -312,6 +313,7 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
             <select id="providerSelect" onchange="onProviderChange()">
                 <option value="openai" %(openai_prov_sel)s>OpenAI</option>
                 <option value="gemini" %(gemini_prov_sel)s>Google Gemini</option>
+                <option value="claude" %(claude_prov_sel)s>Anthropic Claude</option>
             </select>
             <div id="openaiKeyRow">
                 <label>OpenAI API Key</label>
@@ -320,6 +322,10 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
             <div id="geminiKeyRow">
                 <label>Gemini API Key</label>
                 <input type="password" id="geminiKeyInput" value="%(gemini_key)s" placeholder="AIza…">
+            </div>
+            <div id="anthropicKeyRow">
+                <label>Anthropic API Key</label>
+                <input type="password" id="anthropicKeyInput" value="%(anthropic_key)s" placeholder="sk-ant-…">
             </div>
             <label>Model</label>
             <select id="modelSelect"></select>
@@ -393,20 +399,23 @@ function populateModels() {
 }
 function onProviderChange() {
     const provider = document.getElementById('providerSelect').value;
-    // Show the relevant API key field, hide the other
+    // Show the relevant API key field, hide the others
     document.getElementById('openaiKeyRow').classList.toggle('hidden', provider !== 'openai');
     document.getElementById('geminiKeyRow').classList.toggle('hidden', provider !== 'gemini');
-    // Realtime is only available with OpenAI; disable and turn off for Gemini
+    document.getElementById('anthropicKeyRow').classList.toggle('hidden', provider !== 'claude');
+    // Realtime is only available with OpenAI
     const rt = document.getElementById('realtimeToggle');
     const hint = document.getElementById('realtimeHint');
-    if (provider === 'gemini') {
-        rt.checked = false;
-        rt.disabled = true;
-        hint.textContent = 'Available with OpenAI provider';
-        document.getElementById('realtimeWarn').style.display = 'none';
-    } else {
+    if (provider === 'openai') {
         rt.disabled = false;
         hint.textContent = 'Lower latency — streams audio to the cloud';
+    } else {
+        rt.checked = false;
+        rt.disabled = true;
+        hint.textContent = provider === 'claude'
+            ? 'Not available — Anthropic has no audio API'
+            : 'Available with OpenAI provider';
+        document.getElementById('realtimeWarn').style.display = 'none';
     }
     populateModels();
 }
@@ -546,6 +555,7 @@ function saveSettings() {
     const provider = document.getElementById('providerSelect').value;
     const openaiKey = document.getElementById('openaiKeyInput').value;
     const geminiKey = document.getElementById('geminiKeyInput').value;
+    const anthropicKey = document.getElementById('anthropicKeyInput').value;
     const model = document.getElementById('modelSelect').value;
     const ttsProvider = document.getElementById('ttsProvider').value;
     const ttsSpeed = document.getElementById('ttsSpeed').value;
@@ -553,6 +563,7 @@ function saveSettings() {
     location.href = 'app://saveSettings?provider=' + encodeURIComponent(provider)
         + '&openaiKey=' + encodeURIComponent(openaiKey)
         + '&geminiKey=' + encodeURIComponent(geminiKey)
+        + '&anthropicKey=' + encodeURIComponent(anthropicKey)
         + '&model=' + encodeURIComponent(model)
         + '&ttsProvider=' + encodeURIComponent(ttsProvider)
         + '&ttsSpeed=' + encodeURIComponent(ttsSpeed)
@@ -574,8 +585,10 @@ initSettings();
         "target_options": target_options,
         "openai_prov_sel": "selected" if provider == "openai" else "",
         "gemini_prov_sel": "selected" if provider == "gemini" else "",
+        "claude_prov_sel": "selected" if provider == "claude" else "",
         "openai_key": openai_key,
         "gemini_key": gemini_key,
+        "anthropic_key": anthropic_key,
         "piper_sel": "selected" if tts_provider == "piper" else "",
         "openai_tts_sel": "selected" if tts_provider == "openai" else "",
         "gemini_tts_sel": "selected" if tts_provider == "gemini" else "",
@@ -624,6 +637,7 @@ class _NavDelegate(NSObject):
                 params.get("provider", "openai"),
                 params.get("openaiKey", ""),
                 params.get("geminiKey", ""),
+                params.get("anthropicKey", ""),
                 params.get("model", "gpt-5.4-mini"),
                 params.get("ttsProvider", "piper"),
                 params.get("ttsSpeed", "1.0"),
@@ -726,16 +740,19 @@ class TranslationOverlay:
         js = f"{func}({escaped})"
         self._webview.evaluateJavaScript_completionHandler_(js, None)
 
-    def _save_settings(self, provider, openai_key, gemini_key, model,
-                       tts_provider="piper", tts_speed="1.0", tts_voice="nova",
-                       realtime="0"):
+    def _save_settings(self, provider, openai_key, gemini_key, anthropic_key,
+                       model, tts_provider="piper", tts_speed="1.0",
+                       tts_voice="nova", realtime="0"):
         self._config["translation_provider"] = provider
         self._config["openai_api_key"] = openai_key
         self._config["gemini_api_key"] = gemini_key
+        self._config["anthropic_api_key"] = anthropic_key
         self._config["model"] = model
         self._config["tts_provider"] = tts_provider
         self._config["tts_speed"] = float(tts_speed)
         self._config["tts_voice"] = tts_voice
+        # Realtime is OpenAI-only: Anthropic has no audio API at all, and
+        # Gemini's live-translate path is preview-tier.
         self._config["realtime_mode"] = (realtime == "1") and (provider == "openai")
         save_config(self._config)
         print(f"[Overlay] Settings saved (provider: {provider}, model: {model})")
