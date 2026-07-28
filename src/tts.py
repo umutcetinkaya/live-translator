@@ -24,20 +24,13 @@ from providers.base import ProviderError
 # spoken translation is trailing the picture, which defeats the point.
 MAX_QUEUED_SPEECH = 3
 
-DUCK_VOLUME = 0.30
+DUCK_VOLUME = 0.12
 
-# Never duck below this absolute level: at a low system setting, a purely
-# relative duck would take the translation down with the source. Kept low so
-# the source really does drop into the background.
-DUCK_FLOOR = 0.18
-
-# Extra headroom on top of pure compensation, so the translation sits clearly
-# above the ducked source rather than merely matching its pre-duck level.
-TTS_BOOST = 2.0
-
-# Ceiling on software gain — past this, quiet recordings clip instead of
-# getting louder.
-MAX_PLAYER_GAIN = 8.0
+# Floor for the ducked source. The translation cannot be made louder — it is
+# already at full scale — so the only way to make it stand out is to push the
+# source down. 0.06 of the user's level puts roughly 20 dB between them, about
+# the gap between speech and a whisper.
+DUCK_FLOOR = 0.06
 
 
 def _system_volume():
@@ -160,19 +153,13 @@ class TextToSpeech:
             self._synthesize_and_play(text)
 
     def _player_gain(self):
-        """Playback gain for the spoken translation.
+        """Playback gain for the spoken translation — always full scale.
 
-        The translation shares the output we just turned down, so ducking
-        quiets it along with the source. AVAudioPlayer accepts volumes above
-        1.0 (verified: 2.0 and 4.0 read back), so the loss is compensated in
-        software — the source drops, the translation does not."""
-        if self._pre_duck_volume is None:
-            return 1.0
-        ducked = self._ducked_level or self._pre_duck_volume
-        if ducked <= 0:
-            return 1.0
-        gain = self._pre_duck_volume / ducked
-        return min(gain * TTS_BOOST, MAX_PLAYER_GAIN)
+        Synthesised speech already peaks at full scale (measured: Piper output
+        hits 32767/32767), so there is no headroom to boost into. setVolume_
+        accepts values above 1.0 and reads them back, but they only clip.
+        Separation therefore comes entirely from ducking the source."""
+        return 1.0
 
     def _duck(self):
         """Lower system volume so the spoken translation stands out.

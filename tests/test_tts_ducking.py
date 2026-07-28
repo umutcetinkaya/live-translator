@@ -123,49 +123,34 @@ def test_flush_restores_volume(monkeypatch):
     assert calls[-1] == 0.8
 
 
-def test_player_gain_compensates_for_ducking(monkeypatch):
-    """TTS aynı çıkıştan çalıyor; sistem kısılınca TTS de kısılır.
+def test_tts_plays_at_full_scale(monkeypatch):
+    """TTS oynatıcı tam ölçekte çalmalı.
 
-    Ölçüldü: AVAudioPlayer.setVolume_ 1.0 ÜSTÜNÜ kabul ediyor (2.0, 4.0 geri
-    okunuyor), yani yazılımsal kazançla telafi mümkün."""
+    Ölçüldü: Piper'ın ürettiği WAV zaten tepe genlikte (32767/32767, %100
+    doluluk). setVolume_ 1.0 üstünü kabul ediyormuş gibi görünse de yükselecek
+    baş boşluk yok — sadece kırpma olur. Ayrımı kaynağı kısmak sağlar."""
     t, _ = _make(monkeypatch, volume=0.8)
     t._duck()
-    # sistem 0.45 oranına indi -> TTS'in kaybını geri kazanması gerek
-    assert t._player_gain() > 1.0
-
-
-def test_player_gain_is_unity_when_not_ducking(monkeypatch):
-    monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())
-    monkeypatch.setattr(tts_mod, "_system_volume", lambda: 0.8)
-    monkeypatch.setattr(tts_mod, "_set_system_volume", lambda v: None)
-    t = TextToSpeech(config={"target_lang": "tr", "duck_volume": 1.0})
     assert t._player_gain() == 1.0
 
 
-def test_player_gain_is_capped(monkeypatch):
-    """Sınırsız kazanç kırpılma/bozulma yapar."""
-    monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())
-    monkeypatch.setattr(tts_mod, "_system_volume", lambda: 1.0)
-    monkeypatch.setattr(tts_mod, "_set_system_volume", lambda v: None)
-    t = TextToSpeech(config={"target_lang": "tr", "duck_volume": 0.05})
-    t._duck()
-    assert t._player_gain() <= tts_mod.MAX_PLAYER_GAIN
-
-
-def test_tts_ends_up_louder_than_ducked_source(monkeypatch):
-    """Asıl iddia: kısma sonrası TTS efektif seviyesi kaynaktan YÜKSEK."""
+def test_source_is_pushed_well_below_the_translation(monkeypatch):
+    """TTS yükseltilemediği için ayrım kaynağı kısmaktan gelmeli."""
     t, calls = _make(monkeypatch, volume=0.8)
     t._duck()
-    source_level = calls[0]                       # kaynak bu seviyede duyulur
-    tts_level = source_level * t._player_gain()   # TTS kazançla çalar
-    assert tts_level > source_level
+    source, tts = calls[0], 0.8          # TTS sistem seviyesinde çalar
+    assert tts / source >= 4.0, f"kaynak yeterince kısılmadı: {source}"
 
 
-def test_gain_resets_after_unduck(monkeypatch):
-    t, _ = _make(monkeypatch, volume=0.8)
+def test_separation_holds_at_low_system_volume(monkeypatch):
+    """Sistem sesi kısıkken de çeviri kaynağın üstünde kalmalı."""
+    monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())
+    calls = []
+    monkeypatch.setattr(tts_mod, "_system_volume", lambda: 0.35)
+    monkeypatch.setattr(tts_mod, "_set_system_volume", lambda v: calls.append(v))
+    t = TextToSpeech(config={"target_lang": "tr"})
     t._duck()
-    t._unduck()
-    assert t._player_gain() == 1.0
+    assert 0.35 / calls[0] >= 2.5, calls
 
 
 # --- Konuşmalar arası ducking'i koru ---
