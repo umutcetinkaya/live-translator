@@ -24,6 +24,11 @@ from providers.base import ProviderError
 # spoken translation is trailing the picture, which defeats the point.
 MAX_QUEUED_SPEECH = 3
 
+# How much to raise the output while speaking. The synthesised voice is at
+# full scale and most source audio is not, so a modest lift makes the
+# translation comfortably audible without the source becoming harsh.
+SPEAK_VOLUME_BOOST = 1.8
+
 DUCK_VOLUME = 0.12
 
 # Floor for the ducked source. The translation cannot be made louder — it is
@@ -162,23 +167,25 @@ class TextToSpeech:
         return 1.0
 
     def _duck(self):
-        """Lower system volume so the spoken translation stands out.
+        """Raise system volume while the translation is spoken.
 
-        The source drops to `duck_ratio`, while the translation plays at full
-        player gain — that difference is what makes the translation audible
-        over the original, interpreter-style."""
+        macOS has no per-application volume, so the one control available —
+        system volume — scales the source and the translation together.
+        Lowering it therefore quiets the translation too, which is exactly
+        what users reported. Since the synthesised speech is already at full
+        scale and the source usually is not, turning the output *up* lifts the
+        translation to a comfortable level; the source rises with it but
+        stays proportionally where the user set it."""
         if self._duck_ratio >= 1.0 or self._pre_duck_volume is not None:
             return
         current = _system_volume()
         if current is None:
             return
         self._pre_duck_volume = current
-        # Duck relative to the user's own level, but never below a floor —
-        # a very quiet system setting would otherwise make the translation
-        # inaudible too, since both share this output.
-        ducked = min(max(current * self._duck_ratio, DUCK_FLOOR), current)
-        self._ducked_level = ducked
-        _set_system_volume(ducked)
+        boosted = min(current * SPEAK_VOLUME_BOOST, 1.0)
+        self._ducked_level = boosted
+        if boosted > current:
+            _set_system_volume(boosted)
 
     def _unduck(self):
         """Restore the volume captured by the matching _duck()."""
