@@ -9,6 +9,7 @@ from providers.base import ProviderError
 
 class AITranslator:
     TRANSLATE_INTERVAL = 3.0
+    MIN_NEW_CHARS = 20
 
     def __init__(self, on_translation=None, config=None):
         self._on_full_update = on_translation
@@ -19,6 +20,7 @@ class AITranslator:
         self._source_buffer = ""
         self._last_sent_source = ""
         self._last_translation = ""
+        self._deferred_source = ""
         self._running = False
         self._worker = None
         print(f"[Translator] {self._config.get('model')} ready")
@@ -50,12 +52,7 @@ class AITranslator:
             self._source_buffer = ""
             self._last_sent_source = ""
             self._last_translation = ""
-
-    def translate_chunk(self, text):
-        pass
-
-    def set_source_language(self, _):
-        pass
+            self._deferred_source = ""
 
     def _lang_name(self):
         names = {
@@ -65,6 +62,26 @@ class AITranslator:
         }
         return names.get(self._target_lang, self._target_lang)
 
+    def _should_translate(self, source):
+        """Decide whether `source` is worth a translation call this cycle.
+
+        Short additions are deferred so a fast speaker doesn't trigger an API
+        call per word. But once the source stops growing, the deferred tail is
+        translated anyway — otherwise the final sentence never reaches the
+        overlay."""
+        if not source or source == self._last_sent_source:
+            self._deferred_source = ""
+            return False
+        if len(source) - len(self._last_sent_source) >= self.MIN_NEW_CHARS:
+            self._deferred_source = ""
+            return True
+        # Kısa kuyruk: konuşma sürüyorsa beklet, durduysa çevir.
+        if source == self._deferred_source:
+            self._deferred_source = ""
+            return True
+        self._deferred_source = source
+        return False
+
     def _translate_loop(self):
         while self._running:
             time.sleep(self.TRANSLATE_INTERVAL)
@@ -72,9 +89,7 @@ class AITranslator:
                 break
             with self._lock:
                 source = self._source_buffer
-            if not source or source == self._last_sent_source:
-                continue
-            if len(source) - len(self._last_sent_source) < 20:
+            if not self._should_translate(source):
                 continue
             self._last_sent_source = source
             self._do_translate(source)

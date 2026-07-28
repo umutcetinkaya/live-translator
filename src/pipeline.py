@@ -206,16 +206,31 @@ class TranslationPipeline:
             self._current_partial = ""
             self._translator.update_source(self._full_source())
 
+    @staticmethod
+    def _appended_part(previous, current):
+        """Return the part of `current` that is genuinely new.
+
+        The live-document model preserves earlier text but may refine its last
+        sentence, so a word-count diff can start mid-sentence. Compare on word
+        boundaries and re-speak from the first word that changed."""
+        old_words = previous.split() if previous else []
+        new_words = current.split()
+        common = 0
+        for old, new in zip(old_words, new_words):
+            if old != new:
+                break
+            common += 1
+        if common == len(new_words):
+            return ""
+        return " ".join(new_words[common:])
+
     def _on_translation(self, full_translation):
         self._overlay.replace_all_text(full_translation)
 
         if self._tts.enabled:
-            old_words = self._last_tts_text.split() if self._last_tts_text else []
-            new_words = full_translation.split()
-            if len(new_words) > len(old_words):
-                added = " ".join(new_words[len(old_words):])
-                if added and len(added) > 5:
-                    self._tts.speak(added)
+            added = self._appended_part(self._last_tts_text, full_translation)
+            if len(added) > 5:
+                self._tts.speak(added)
             self._last_tts_text = full_translation
 
     @property

@@ -165,7 +165,7 @@ Pick a provider in Settings, paste its API key, and the model list updates autom
 | Gemini 2.5 Flash-Lite | ⚡ Fastest | ¢ | Budget |
 | Gemini 3.5 Flash | 🚀 Fast | $$ | Latest + Quality |
 
-> **Recommendation:** GPT-4o Mini or GPT-4.1 Nano for real-time translation (fast + cheap).
+> **Recommendation:** GPT-5.4 mini (OpenAI) or Gemini 2.5 Flash (Google) for real-time translation — fast + cheap.
 
 ## How It Works
 
