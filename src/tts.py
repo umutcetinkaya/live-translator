@@ -8,6 +8,7 @@ import threading
 import time
 import queue
 import subprocess
+import array
 from config import load_config
 from providers import get_tts_provider
 from providers.base import ProviderError
@@ -36,6 +37,46 @@ DUCK_VOLUME = 0.12
 # source down. 0.06 of the user's level puts roughly 20 dB between them, about
 # the gap between speech and a whisper.
 DUCK_FLOOR = 0.06
+
+
+# Normalisation target, just under full scale so rounding can't clip.
+PEAK_TARGET = 0.92
+
+# Ceiling on normalisation gain — a near-silent take is mostly noise, and
+# lifting it all the way just makes the noise loud.
+MAX_NORMALISE_GAIN = 12.0
+
+
+def normalize_pcm_s16(pcm_bytes):
+    """Raise quiet synthesised speech toward full scale.
+
+    Voices differ enormously in level: measured, OpenAI's output peaks at 23%
+    of full scale while Piper's is already at the ceiling. Without this the
+    OpenAI voice is simply too quiet to hear over the source audio, and no
+    amount of system-volume juggling fixes it — the file itself is quiet.
+    Audio already near the ceiling is returned untouched, since amplifying it
+    would only clip."""
+    if not pcm_bytes:
+        return pcm_bytes
+    usable = len(pcm_bytes) - (len(pcm_bytes) % 2)
+    if usable <= 0:
+        return pcm_bytes
+    samples = array.array("h")
+    samples.frombytes(pcm_bytes[:usable])
+    peak = max((abs(s) for s in samples), default=0)
+    if peak == 0:
+        return pcm_bytes
+
+    target = int(32767 * PEAK_TARGET)
+    if peak >= target:
+        return pcm_bytes
+    gain = min(target / peak, MAX_NORMALISE_GAIN)
+
+    out = array.array("h", bytes(2 * len(samples)))
+    for i, s in enumerate(samples):
+        v = int(s * gain)
+        out[i] = 32767 if v > 32767 else (-32768 if v < -32768 else v)
+    return out.tobytes()
 
 
 def _system_volume():
@@ -96,6 +137,7 @@ class TextToSpeech:
         self._duck_ratio = float(self._config.get("duck_volume", DUCK_VOLUME))
         self._pre_duck_volume = None
         self._ducked_level = None
+        self._warned_no_headroom = False
         self._provider = get_tts_provider(self._config)
 
     @property
@@ -184,8 +226,18 @@ class TextToSpeech:
         self._pre_duck_volume = current
         boosted = min(current * SPEAK_VOLUME_BOOST, 1.0)
         self._ducked_level = boosted
-        if boosted > current:
+        # A lift under ~10% is inaudible; treat it as no headroom rather than
+        # pretending the feature worked.
+        if boosted >= current * 1.1:
             _set_system_volume(boosted)
+        elif not self._warned_no_headroom:
+            # Nothing to raise into — say so, or it looks like the feature is
+            # simply broken (which is what users reported at 100%).
+            self._warned_no_headroom = True
+            self._report_error(
+                "System volume is at maximum — lower it so the spoken "
+                "translation can be raised above the source"
+            )
 
     def _unduck(self):
         """Restore the volume captured by the matching _duck()."""
@@ -204,6 +256,48 @@ class TextToSpeech:
         drains."""
         if self._queue.empty():
             self._unduck()
+
+    def _normalized_path(self, path):
+        """Return a playable path whose audio sits near full scale.
+
+        Voice levels vary wildly between providers — OpenAI's output was
+        measured at 23% of full scale, Piper's at 100% — so without this the
+        OpenAI voice is inaudible over the source no matter how the system
+        volume is set. Falls back to the original file if anything goes
+        wrong; a quiet translation beats none."""
+        import os
+        import wave
+        try:
+            src = path
+            if not path.lower().endswith(".wav"):
+                src = os.path.join(os.path.dirname(path), "_tts_norm_in.wav")
+                r = subprocess.run(
+                    ["afconvert", "-f", "WAVE", "-d", "LEI16", path, src],
+                    capture_output=True, timeout=15,
+                )
+                if r.returncode != 0 or not os.path.exists(src):
+                    return path
+
+            with wave.open(src, "rb") as w:
+                params = w.getparams()
+                if params.sampwidth != 2:
+                    return path
+                frames = w.readframes(params.nframes)
+
+            loud = normalize_pcm_s16(frames)
+            if loud is frames or loud == frames:
+                return src
+
+            out = os.path.join(os.path.dirname(path), "_tts_norm_out.wav")
+            with wave.open(out, "wb") as w:
+                w.setnchannels(params.nchannels)
+                w.setsampwidth(2)
+                w.setframerate(params.framerate)
+                w.writeframes(loud)
+            return out
+        except Exception as e:
+            print(f"[TTS] Normalise skipped: {e}")
+            return path
 
     def _report_error(self, message):
         """Surface a failure to the user, once per distinct problem.
@@ -232,7 +326,7 @@ class TextToSpeech:
             return
         self._last_error = None
         if path:
-            self._play_file(path)
+            self._play_file(self._normalized_path(path))
 
     def _play_file(self, path):
         from AVFoundation import AVAudioPlayer

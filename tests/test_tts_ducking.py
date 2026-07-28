@@ -132,6 +132,42 @@ def test_tts_effective_level_beats_pre_duck_source(monkeypatch):
     assert calls[0] >= 0.5
 
 
+def test_warns_when_no_headroom_to_boost(monkeypatch):
+    """Sistem sesi tavandaysa yükseltme etkisiz — kullanıcı nedenini bilmeli.
+
+    Kullanıcı %100'de çalışırken "TTS yükselmiyor" diye bildirdi; kod doğru
+    çalışıyordu ama yükseltecek yer yoktu ve bunu hiçbir yerde söylemiyordu."""
+    monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())
+    monkeypatch.setattr(tts_mod, "_system_volume", lambda: 0.97)
+    monkeypatch.setattr(tts_mod, "_set_system_volume", lambda v: None)
+    warned = []
+    t = TextToSpeech(config={"target_lang": "tr"}, on_error=warned.append)
+    t._duck()
+    assert warned, "baş boşluk yokken uyarı verilmedi"
+    assert "volume" in warned[0].lower()
+
+
+def test_no_warning_when_headroom_exists(monkeypatch):
+    t, _ = _make(monkeypatch, volume=0.5)
+    warned = []
+    t._on_error = warned.append
+    t._duck()
+    assert warned == []
+
+
+def test_headroom_warning_is_reported_once(monkeypatch):
+    """Her satırda tekrarlamamalı."""
+    monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())
+    monkeypatch.setattr(tts_mod, "_system_volume", lambda: 1.0)
+    monkeypatch.setattr(tts_mod, "_set_system_volume", lambda v: None)
+    warned = []
+    t = TextToSpeech(config={"target_lang": "tr"}, on_error=warned.append)
+    for _ in range(4):
+        t._duck()
+        t._unduck()
+    assert len(warned) == 1, warned
+
+
 # --- Seviye değişimini konuşma boyunca koru ---
 # Her satırda yükseltip geri almak sesi dalgalandırıyordu. Tercüman pasajı
 # bitirene kadar sözü bırakmaz: seviye kuyruk boşalana kadar korunur.
