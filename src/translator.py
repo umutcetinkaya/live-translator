@@ -2,7 +2,7 @@
 
 import threading
 import time
-from config import load_config, normalize_model
+from config import load_config, normalize_model, CONTEXT_WINDOW_WORDS
 from providers import get_translation_provider
 from providers.base import ProviderError
 
@@ -21,6 +21,8 @@ class AITranslator:
         self._last_sent_source = ""
         self._last_translation = ""
         self._deferred_source = ""
+        self._window_words = self._config.get("context_window_words",
+                                              CONTEXT_WINDOW_WORDS)
         self._running = False
         self._worker = None
         print(f"[Translator] {self._config.get('model')} ready")
@@ -42,6 +44,8 @@ class AITranslator:
         self._config = config
         self._provider = get_translation_provider(config)
         self._target_lang = config.get("target_lang", "tr")
+        self._window_words = config.get("context_window_words",
+                                        CONTEXT_WINDOW_WORDS)
         print(f"[Translator] Config updated: {config.get('model')}")
 
     def set_target_lang(self, lang_code):
@@ -53,6 +57,18 @@ class AITranslator:
             self._last_sent_source = ""
             self._last_translation = ""
             self._deferred_source = ""
+
+    def _windowed_source(self, source):
+        """Keep only the last N words of the transcript.
+
+        The transcript grows without bound, so re-sending all of it every cycle
+        makes cost and latency climb linearly. The previous translation already
+        carries earlier context forward, so dropping old source text preserves
+        continuity."""
+        words = source.split()
+        if len(words) <= self._window_words:
+            return source
+        return " ".join(words[-self._window_words:])
 
     def _lang_name(self):
         names = {
@@ -100,7 +116,8 @@ class AITranslator:
             model = normalize_model(self._config.get("model", ""), provider)
             target = self._lang_name()
             result = self._provider.translate_document(
-                source, self._last_translation, target, model,
+                self._windowed_source(source), self._last_translation,
+                target, model,
             )
             if result:
                 self._last_translation = result
