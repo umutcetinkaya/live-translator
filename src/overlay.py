@@ -30,6 +30,18 @@ WIDTH = 460
 HEIGHT = 820
 
 
+def _current_system_volume():
+    """System output volume as 0-100, for the panel slider's initial position."""
+    try:
+        import subprocess
+        out = subprocess.run(
+            ["osascript", "-e", "output volume of (get volume settings)"],
+            capture_output=True, text=True, timeout=2)
+        return max(0, min(100, int(out.stdout.strip())))
+    except Exception:
+        return 70
+
+
 def _build_html(config):
     source_options = ""
     for name, locale in SOURCE_LANGUAGES.items():
@@ -132,6 +144,50 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Audio bar — pinned above the transcript so controls stay reachable
+   while text scrolls underneath */
+#audiobar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+#audiobar .ab-btn {
+    background: rgba(255,255,255,0.07);
+    border: none;
+    color: rgba(255,255,255,0.55);
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+#audiobar .ab-btn.on { background: rgba(92,192,112,0.22); color: #7fd694; }
+#audiobar select {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #ccc;
+    font-size: 10px;
+    padding: 3px 5px;
+    border-radius: 5px;
+    outline: none;
+    width: auto;
+}
+#audiobar .ab-lbl {
+    color: rgba(255,255,255,0.3);
+    font-size: 9px;
+    white-space: nowrap;
+}
+#audiobar input[type=range] {
+    flex: 1;
+    min-width: 40px;
+    padding: 0;
+    accent-color: #5cc070;
 }
 
 /* Chat area */
@@ -297,6 +353,23 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
 </div>
 
 <iframe id="dragFrame" style="display:none"></iframe>
+
+<!-- Audio bar: live controls, no round trip through Settings -->
+<div id="audiobar">
+    <button id="abTts" class="ab-btn" onclick="toggleTTS()">🔊 Voice</button>
+    <select id="abVoice" onchange="abVoiceChange()" title="Voice provider">
+        <option value="piper" %(ab_piper)s>Piper</option>
+        <option value="openai" %(ab_openai)s>OpenAI</option>
+        <option value="gemini" %(ab_gemini)s>Gemini</option>
+    </select>
+    <span class="ab-lbl">Voice</span>
+    <input type="range" id="abLevel" min="10" max="100" value="%(ab_level)s"
+           oninput="abLevelChange(this.value)" title="Translation loudness">
+    <span class="ab-lbl">System</span>
+    <input type="range" id="abSys" min="0" max="100" value="%(ab_sys)s"
+           oninput="abSysChange(this.value)" title="System volume">
+</div>
+
 <div id="chat">
     <div class="empty">Listening...</div>
 </div>
@@ -512,6 +585,11 @@ function setTTSState(on) {
     const btn = document.getElementById('ttsBtn');
     btn.textContent = on ? 'TTS On' : 'TTS Off';
     btn.style.color = on ? '#5cc070' : '';
+    const ab = document.getElementById('abTts');
+    if (ab) {
+        ab.textContent = on ? '🔊 Voice' : '🔇 Voice';
+        ab.classList.toggle('on', on);
+    }
 }
 
 // Drag — drag window from header area
@@ -572,6 +650,19 @@ function saveSettings() {
     closeSettings();
 }
 
+function abVoiceChange() {
+    const v = document.getElementById('abVoice').value;
+    location.href = 'app://setTtsProvider?name=' + encodeURIComponent(v);
+}
+
+function abLevelChange(v) {
+    location.href = 'app://setSpeechLevel?level=' + encodeURIComponent(v);
+}
+
+function abSysChange(v) {
+    location.href = 'app://setSystemVolume?level=' + encodeURIComponent(v);
+}
+
 function initSettings() {
     onProviderChange();      // key rows + realtime state + models
     onTtsProviderChange();   // OpenAI voice visibility
@@ -586,6 +677,11 @@ initSettings();
         "openai_prov_sel": "selected" if provider == "openai" else "",
         "gemini_prov_sel": "selected" if provider == "gemini" else "",
         "claude_prov_sel": "selected" if provider == "claude" else "",
+        "ab_piper": "selected" if tts_provider == "piper" else "",
+        "ab_openai": "selected" if tts_provider == "openai" else "",
+        "ab_gemini": "selected" if tts_provider == "gemini" else "",
+        "ab_level": int(float(config.get("speech_level", 0.92)) * 100),
+        "ab_sys": _current_system_volume(),
         "openai_key": openai_key,
         "gemini_key": gemini_key,
         "anthropic_key": anthropic_key,
@@ -644,6 +740,12 @@ class _NavDelegate(NSObject):
                 params.get("ttsVoice", "nova"),
                 params.get("realtime", "0"),
             )
+        elif action == "setTtsProvider" and o._on_audio_control:
+            o._on_audio_control("provider", params.get("name", "piper"))
+        elif action == "setSpeechLevel" and o._on_audio_control:
+            o._on_audio_control("level", params.get("level", "92"))
+        elif action == "setSystemVolume" and o._on_audio_control:
+            o._on_audio_control("system", params.get("level", "70"))
         elif action == "clear" and o._on_clear:
             o._on_clear()
         elif action == "close" and o._on_close:
@@ -673,7 +775,8 @@ class _Updater(NSObject):
 
 class TranslationOverlay:
 
-    def __init__(self, on_lang_change=None, on_settings_change=None, on_clear=None, on_close=None, on_toggle_tts=None):
+    def __init__(self, on_lang_change=None, on_settings_change=None, on_clear=None,
+                 on_close=None, on_toggle_tts=None, on_audio_control=None):
         self._window = None
         self._webview = None
         self._on_lang_change = on_lang_change
@@ -681,6 +784,7 @@ class TranslationOverlay:
         self._on_clear = on_clear
         self._on_close = on_close
         self._on_toggle_tts = on_toggle_tts
+        self._on_audio_control = on_audio_control
         self._config = load_config()
         self._updater = _Updater.alloc().init()
         self._updater._overlay = self

@@ -7,6 +7,7 @@ Listener partials are shown as original text in the overlay.
 Translator replaces the entire translation — context never breaks.
 """
 
+import subprocess
 import threading
 from audio_capture import SystemAudioCapture
 from speech_recognizer import RealtimeSpeechRecognizer
@@ -14,6 +15,20 @@ from translator import AITranslator
 from tts import TextToSpeech
 from config import load_config
 from providers import get_realtime_provider
+
+
+def _set_system_volume(level):
+    """Set macOS output volume from a 0.0-1.0 value.
+
+    Exposed through the audio bar so the user can rebalance the source
+    against the translation without leaving the app — macOS offers no
+    per-application volume, so this is the only lever available."""
+    try:
+        pct = max(0, min(100, round(level * 100)))
+        subprocess.run(["osascript", "-e", f"set volume output volume {pct}"],
+                       capture_output=True, timeout=2)
+    except Exception as e:
+        print(f"[Pipeline] Volume set failed: {e}")
 
 
 class TranslationPipeline:
@@ -162,6 +177,18 @@ class TranslationPipeline:
 
     def toggle_tts(self):
         return self._tts.toggle()
+
+    def audio_control(self, what, value):
+        """Apply a change from the audio bar, live.
+
+        Kept off the Settings round trip: during a live stream the user needs
+        to fix the sound while it is playing, not after saving a dialog."""
+        if what == "provider":
+            self._tts.set_provider(value)
+        elif what == "level":
+            self._tts.set_speech_level(float(value) / 100.0)
+        elif what == "system":
+            _set_system_volume(float(value) / 100.0)
 
     def _on_audio(self, sample_buffer):
         if not self._running:

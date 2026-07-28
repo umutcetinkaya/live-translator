@@ -25,8 +25,9 @@ _OVERLAY_PATH = os.path.join(
 def _load_build_html():
     """_build_html'i overlay.py'den izole edip çalıştırılabilir hale getir."""
     tree = ast.parse(open(_OVERLAY_PATH).read())
-    fn = next(n for n in tree.body
-              if isinstance(n, ast.FunctionDef) and n.name == "_build_html")
+    wanted = ("_build_html", "_current_system_volume")
+    fns = [n for n in tree.body
+           if isinstance(n, ast.FunctionDef) and n.name in wanted]
     ns = {
         "json": json,
         "SOURCE_LANGUAGES": SOURCE_LANGUAGES,
@@ -34,7 +35,7 @@ def _load_build_html():
         "MODELS": MODELS,
         "OVERLAY_OPACITY": OVERLAY_OPACITY,
     }
-    exec(compile(ast.Module(body=[fn], type_ignores=[]), "<overlay>", "exec"), ns)
+    exec(compile(ast.Module(body=fns, type_ignores=[]), "<overlay>", "exec"), ns)
     return ns["_build_html"]
 
 

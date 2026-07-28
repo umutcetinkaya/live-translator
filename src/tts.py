@@ -27,7 +27,7 @@ PEAK_TARGET = 0.92
 MAX_NORMALISE_GAIN = 12.0
 
 
-def normalize_pcm_s16(pcm_bytes):
+def normalize_pcm_s16(pcm_bytes, target=PEAK_TARGET):
     """Raise quiet synthesised speech toward full scale.
 
     Voices differ enormously in level: measured, OpenAI's output peaks at 23%
@@ -47,10 +47,10 @@ def normalize_pcm_s16(pcm_bytes):
     if peak == 0:
         return pcm_bytes
 
-    target = int(32767 * PEAK_TARGET)
-    if peak >= target:
+    want = int(32767 * max(0.0, min(1.0, target)))
+    if peak == want:
         return pcm_bytes
-    gain = min(target / peak, MAX_NORMALISE_GAIN)
+    gain = min(want / peak, MAX_NORMALISE_GAIN)
 
     out = array.array("h", bytes(2 * len(samples)))
     for i, s in enumerate(samples):
@@ -89,7 +89,51 @@ class TextToSpeech:
         self._current_player = None
         self._on_error = on_error
         self._last_error = None
+        self._speech_level = float(self._config.get("speech_level", PEAK_TARGET))
+        self._provider_name = self._config.get("tts_provider", "piper")
         self._provider = get_tts_provider(self._config)
+
+    # --- Live controls, driven from the panel above the transcript ---
+
+    @property
+    def speech_level(self):
+        """Target peak for the spoken translation, 0.0–1.0."""
+        return self._speech_level
+
+    def set_speech_level(self, level):
+        """Set how loud the synthesised voice is rendered.
+
+        Applied when normalising the audio file, which is the only place
+        loudness can actually be changed — player gain above 1.0 just clips."""
+        self._speech_level = max(0.0, min(1.0, float(level)))
+
+    def normalize(self, pcm_bytes):
+        """Normalise to the level currently selected in the panel."""
+        return normalize_pcm_s16(pcm_bytes, self._speech_level)
+
+    @property
+    def provider_name(self):
+        return self._provider_name
+
+    def set_provider(self, name):
+        """Switch voice provider live, keeping the old one if the new fails.
+
+        Losing speech entirely because of a typo or a missing key would be
+        worse than staying on the previous voice."""
+        if name == self._provider_name:
+            return
+        cfg = dict(self._config)
+        cfg["tts_provider"] = name
+        try:
+            provider = get_tts_provider(cfg)
+        except Exception as e:
+            self._report_error(f"Cannot switch to {name}: {e}")
+            return
+        self._flush()          # queued audio was synthesised by the old voice
+        self._config = cfg
+        self._provider = provider
+        self._provider_name = name
+        print(f"[TTS] Provider -> {name}")
 
     @property
     def enabled(self):
@@ -186,7 +230,7 @@ class TextToSpeech:
                     return path
                 frames = w.readframes(params.nframes)
 
-            loud = normalize_pcm_s16(frames)
+            loud = self.normalize(frames)
             if loud is frames or loud == frames:
                 return src
 

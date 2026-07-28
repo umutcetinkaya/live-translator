@@ -31,9 +31,17 @@ def test_quiet_audio_is_amplified():
     assert _peak(out) > 25000
 
 
-def test_already_loud_audio_is_left_alone():
-    """Tavandaki ses (Piper) yükseltilirse yalnızca kırpılır."""
-    src = _pcm(32000)
+def test_loud_audio_is_brought_down_to_target():
+    """Hedefin üstündeki ses hedefe İNDİRİLİR.
+
+    Kaydırıcı eklendiğinde bu davranış değişti: kullanıcı sesi kısmak da
+    isteyebiliyor. Yükseltmek kırpardı, indirmek güvenli."""
+    out = normalize_pcm_s16(_pcm(32000), target=0.5)
+    assert _peak(out) <= int(32767 * 0.5) + 1
+
+
+def test_audio_already_at_target_is_untouched():
+    src = _pcm(int(32767 * PEAK_TARGET))
     assert normalize_pcm_s16(src) == src
 
 

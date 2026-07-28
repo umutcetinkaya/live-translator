@@ -46,6 +46,7 @@ class AppDelegate(NSObject):
             on_clear=self._on_clear,
             on_close=self._on_close,
             on_toggle_tts=self._on_toggle_tts,
+            on_audio_control=self._on_audio_control,
         )
         self._setup_status_bar()
         self._overlay.setup()
@@ -115,6 +116,10 @@ class AppDelegate(NSObject):
         if self._pipeline:
             self._pipeline.stop()
         NSApp.terminate_(None)
+
+    def _on_audio_control(self, what, value):
+        if self._pipeline:
+            self._pipeline.audio_control(what, value)
 
     def _on_toggle_tts(self):
         if self._pipeline:
