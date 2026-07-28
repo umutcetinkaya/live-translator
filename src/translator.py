@@ -8,8 +8,11 @@ from providers.base import ProviderError
 
 
 class AITranslator:
-    TRANSLATE_INTERVAL = 3.0
-    MIN_NEW_CHARS = 20
+    # Tuned for perceived latency: at 3.0s/20 chars a speaker could wait two
+    # cycles (~6s) before seeing anything. 1.2s with a lower char floor keeps
+    # subtitles close to the speech without spamming the API.
+    TRANSLATE_INTERVAL = 1.2
+    MIN_NEW_CHARS = 12
 
     def __init__(self, on_translation=None, config=None):
         self._on_full_update = on_translation

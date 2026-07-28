@@ -35,11 +35,20 @@ Rules:
 - NO commentary or notes
 - If source ends mid-sentence, translate what you can"""
 
-MAX_TOKENS = 4096
+# The live document is resent in full every cycle, so the output grows with the
+# session. 4096 truncated long translations mid-sentence.
+MAX_TOKENS = 16000
 
-# Adaptive thinking is on by default on Sonnet 5 and Opus 5 and adds latency to
-# the ~3s translation loop. Haiku 4.5 does not support thinking at all.
-_THINKING_CAPABLE = ("claude-sonnet-5", "claude-opus-5")
+# Per-model tuning. Adaptive thinking is on by default on Sonnet 5 and Opus 5
+# and costs latency in a sub-second subtitle loop, so it is disabled; Haiku 4.5
+# has no thinking to disable and rejects the parameter. Effort is only accepted
+# by the models that reason, and `low` is the right setting here — translation
+# is not a reasoning task, and lower effort means fewer tokens and less delay.
+_MODEL_TUNING = {
+    "claude-haiku-4-5": {},
+    "claude-sonnet-5": {"thinking": {"type": "disabled"}},
+    "claude-opus-5": {"thinking": {"type": "disabled"}},
+}
 
 
 class ClaudeTranslationProvider(TranslationProvider):
@@ -65,8 +74,7 @@ class ClaudeTranslationProvider(TranslationProvider):
             }],
             "messages": [{"role": "user", "content": user_msg}],
         }
-        if model in _THINKING_CAPABLE:
-            params["thinking"] = {"type": "disabled"}
+        params.update(_MODEL_TUNING.get(model, {}))
 
         try:
             resp = self._client.messages.create(**params)

@@ -93,6 +93,43 @@ def test_haiku_omits_thinking():
     assert "thinking" not in client.messages.create.call_args.kwargs
 
 
+def test_haiku_omits_effort():
+    """Haiku effort de kabul etmez."""
+    client = _fake_client()
+    p = ClaudeTranslationProvider(client=client)
+    p.translate_document("Hello", "", "Turkish", "claude-haiku-4-5")
+    assert "output_config" not in client.messages.create.call_args.kwargs
+
+
+def test_reasoning_models_disable_thinking_without_effort():
+    """Thinking kapatılır; effort GÖNDERİLMEZ.
+
+    Ölçüldü: Sonnet 5'te effort=low gecikmeyi 2.19s -> 3.49s'e ÇIKARIYOR.
+    Sezgiye aykırı, o yüzden test ediyoruz — biri 'hızlansın diye' effort
+    eklemeye kalkarsa burada yakalanır."""
+    client = _fake_client()
+    p = ClaudeTranslationProvider(client=client)
+    for model in ("claude-sonnet-5", "claude-opus-5"):
+        p.translate_document("Hello", "", "Turkish", model)
+        kwargs = client.messages.create.call_args.kwargs
+        assert kwargs["thinking"] == {"type": "disabled"}, model
+        assert "output_config" not in kwargs, model
+
+
+def test_max_tokens_leaves_room_for_long_documents():
+    """Canlı doküman her turda tam gönderilir; 4096 uzun çeviriyi kesiyordu."""
+    assert MAX_TOKENS >= 16000
+
+
+def test_unknown_model_sends_no_tuning():
+    """Tanınmayan model için ekstra parametre gönderilmemeli (400 riski)."""
+    client = _fake_client()
+    p = ClaudeTranslationProvider(client=client)
+    p.translate_document("Hello", "", "Turkish", "claude-future-9")
+    kwargs = client.messages.create.call_args.kwargs
+    assert "thinking" not in kwargs and "output_config" not in kwargs
+
+
 def test_prev_translation_included_when_present():
     client = _fake_client()
     p = ClaudeTranslationProvider(client=client)
