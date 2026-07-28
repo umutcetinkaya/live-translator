@@ -67,7 +67,11 @@ def split_sentences(text):
 # cut before the English verb leaves the model nothing to build on. Measured:
 # a 14-word cut produced "Bugün bakıyoruz nasıl büyük" (word salad); the full
 # thought produced "Bugün büyük dil modellerinin ... inceliyoruz."
-UNPUNCTUATED_SEGMENT_WORDS = 28
+#
+# 28 read well but only ever fired at a pause — the translation arrived after
+# the speaker stopped. 18 is long enough to carry a clause and short enough to
+# keep firing while speech flows.
+UNPUNCTUATED_SEGMENT_WORDS = 18
 
 # Words held back as unstable. Recognition keeps revising the most recent
 # words, and committing them would freeze text that is about to change.

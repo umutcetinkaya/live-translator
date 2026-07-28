@@ -176,10 +176,15 @@ def test_segments_reconstruct_the_source():
 # henüz gelmemiştir. Ölçüldü: 14 kelimelik parça "Bugün bakıyoruz nasıl büyük"
 # üretiyordu; tam düşünce "Bugün büyük dil modellerinin ... inceliyoruz."
 
-def test_segment_is_long_enough_for_a_complete_thought():
-    """Segment, tam bir düşünce taşıyacak kadar uzun olmalı."""
+def test_segment_balances_quality_against_delay():
+    """Segment tam düşünce taşımalı ama konuşma akarken de tetiklenmeli.
+
+    28 kelime kaliteliydi fakat çeviri yalnızca konuşmacı durunca geliyordu
+    ("durdurunca geç geldi"). Yarım cümle de anlamsız çıktı üretiyordu, o
+    yüzden aralık dar: bir yan cümleyi taşıyacak kadar uzun, akışı
+    durdurmayacak kadar kısa."""
     import segmenter
-    assert segmenter.UNPUNCTUATED_SEGMENT_WORDS >= 24
+    assert 16 <= segmenter.UNPUNCTUATED_SEGMENT_WORDS <= 22
 
 
 def test_segments_carry_a_full_thought():
