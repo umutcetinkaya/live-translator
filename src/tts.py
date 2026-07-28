@@ -14,29 +14,9 @@ from providers import get_tts_provider
 from providers.base import ProviderError
 
 
-# Fraction of the original volume the source audio drops to while the
-# translation is being spoken. 1.0 turns ducking off.
-#
-# The translation shares this output, so ducking too hard makes the
-# translation quiet as well — 0.25 was low enough that users reported the
-# spoken translation getting quiet along with the source. 0.45 keeps the
-# source clearly in the background while leaving the translation audible.
 # Lines allowed to wait for the voice. Small on purpose: a backlog means the
 # spoken translation is trailing the picture, which defeats the point.
 MAX_QUEUED_SPEECH = 3
-
-# How much to raise the output while speaking. The synthesised voice is at
-# full scale and most source audio is not, so a modest lift makes the
-# translation comfortably audible without the source becoming harsh.
-SPEAK_VOLUME_BOOST = 1.8
-
-DUCK_VOLUME = 0.12
-
-# Floor for the ducked source. The translation cannot be made louder — it is
-# already at full scale — so the only way to make it stand out is to push the
-# source down. 0.06 of the user's level puts roughly 20 dB between them, about
-# the gap between speech and a whisper.
-DUCK_FLOOR = 0.06
 
 
 # Normalisation target, just under full scale so rounding can't clip.
@@ -79,28 +59,6 @@ def normalize_pcm_s16(pcm_bytes):
     return out.tobytes()
 
 
-def _system_volume():
-    """Current output volume as 0.0–1.0, or None if it can't be read."""
-    try:
-        out = subprocess.run(
-            ["osascript", "-e", "output volume of (get volume settings)"],
-            capture_output=True, text=True, timeout=2,
-        )
-        return int(out.stdout.strip()) / 100.0
-    except Exception:
-        return None
-
-
-def _set_system_volume(level):
-    """Set output volume from a 0.0–1.0 value."""
-    try:
-        pct = max(0, min(100, round(level * 100)))
-        subprocess.run(["osascript", "-e", f"set volume output volume {pct}"],
-                       capture_output=True, timeout=2)
-    except Exception:
-        pass
-
-
 def _friendly(message):
     """Turn a provider error into something the user can act on.
 
@@ -131,13 +89,6 @@ class TextToSpeech:
         self._current_player = None
         self._on_error = on_error
         self._last_error = None
-        # Simultaneous-interpreter behaviour: drop the source audio while the
-        # translation is spoken, so the two don't talk over each other.
-        # 1.0 disables ducking entirely.
-        self._duck_ratio = float(self._config.get("duck_volume", DUCK_VOLUME))
-        self._pre_duck_volume = None
-        self._ducked_level = None
-        self._warned_no_headroom = False
         self._provider = get_tts_provider(self._config)
 
     @property
@@ -202,60 +153,11 @@ class TextToSpeech:
     def _player_gain(self):
         """Playback gain for the spoken translation — always full scale.
 
-        Synthesised speech already peaks at full scale (measured: Piper output
-        hits 32767/32767), so there is no headroom to boost into. setVolume_
-        accepts values above 1.0 and reads them back, but they only clip.
-        Separation therefore comes entirely from ducking the source."""
+        Loudness is handled by normalising the audio file itself, not by
+        player gain: setVolume_ accepts values above 1.0 and reads them back,
+        but they only clip."""
         return 1.0
 
-    def _duck(self):
-        """Raise system volume while the translation is spoken.
-
-        macOS has no per-application volume, so the one control available —
-        system volume — scales the source and the translation together.
-        Lowering it therefore quiets the translation too, which is exactly
-        what users reported. Since the synthesised speech is already at full
-        scale and the source usually is not, turning the output *up* lifts the
-        translation to a comfortable level; the source rises with it but
-        stays proportionally where the user set it."""
-        if self._duck_ratio >= 1.0 or self._pre_duck_volume is not None:
-            return
-        current = _system_volume()
-        if current is None:
-            return
-        self._pre_duck_volume = current
-        boosted = min(current * SPEAK_VOLUME_BOOST, 1.0)
-        self._ducked_level = boosted
-        # A lift under ~10% is inaudible; treat it as no headroom rather than
-        # pretending the feature worked.
-        if boosted >= current * 1.1:
-            _set_system_volume(boosted)
-        elif not self._warned_no_headroom:
-            # Nothing to raise into — say so, or it looks like the feature is
-            # simply broken (which is what users reported at 100%).
-            self._warned_no_headroom = True
-            self._report_error(
-                "System volume is at maximum — lower it so the spoken "
-                "translation can be raised above the source"
-            )
-
-    def _unduck(self):
-        """Restore the volume captured by the matching _duck()."""
-        if self._pre_duck_volume is None:
-            return
-        level, self._pre_duck_volume = self._pre_duck_volume, None
-        self._ducked_level = None
-        _set_system_volume(level)
-
-    def _release_duck_if_idle(self):
-        """Restore the volume only once there is nothing left to say.
-
-        Ducking per line made the source audio surge back up between spoken
-        lines, so the background kept rising and falling. An interpreter holds
-        the floor for the whole passage, so the duck is held until the queue
-        drains."""
-        if self._queue.empty():
-            self._unduck()
 
     def _normalized_path(self, path):
         """Return a playable path whose audio sits near full scale.
@@ -334,23 +236,15 @@ class TextToSpeech:
         url = NSURL.fileURLWithPath_(path)
         player, error = AVAudioPlayer.alloc().initWithContentsOfURL_error_(url, None)
         if player and not error:
-            # Duck first: the gain is computed from how far the output dropped.
-            self._duck()
             player.setVolume_(self._player_gain())
-            try:
-                player.play()
-                self._current_player = player
-                while player.isPlaying() and self._enabled:
-                    time.sleep(0.1)
-                player.stop()
-                self._current_player = None
-            finally:
-                # Hold the duck if more lines are waiting — restoring between
-                # every line makes the background audio pump up and down.
-                self._release_duck_if_idle()
+            player.play()
+            self._current_player = player
+            while player.isPlaying() and self._enabled:
+                time.sleep(0.1)
+            player.stop()
+            self._current_player = None
 
     def _flush(self):
-        self._unduck()   # never leave the user's volume turned down
         while not self._queue.empty():
             try:
                 self._queue.get_nowait()

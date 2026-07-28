@@ -1,10 +1,16 @@
-"""TTS oynatma sırasında ses seviyesi testleri.
+"""TTS oynatma seviyesi testleri.
 
-macOS uygulama başına ses kontrolü vermiyor: elimizdeki tek denetim sistem
-sesi ve o, kaynağı da çeviriyi de aynı anda ölçekliyor. Bu yüzden KISMAK
-çeviriyi de kısıyordu ("ses kısılıyor ama TTS de kısılıyor"). Sentezlenmiş
-ses zaten tam ölçekte olduğundan, konuşma boyunca çıkışı YÜKSELTMEK çeviriyi
-rahat duyulur seviyeye taşıyor; bitince eski seviye geri veriliyor.
+macOS uygulama başına ses kontrolü vermiyor. Elimizdeki tek denetim sistem
+sesi ve o, kaynağı da çeviriyi de AYNI katsayıyla çarpıyor — yani kısmak da
+yükseltmek de aradaki oranı hiç değiştirmiyor. Ölçüldü ve doğrulandı:
+
+  kısınca : kaynak ve TTS birlikte düşüyor ("TTS de kısılıyor")
+  yükseltince: sistem zaten tavandaysa etkisiz ("yükselmiyor")
+
+Bu yüzden sistem sesine hiç dokunulmuyor. Çevirinin duyulur olmasını
+sağlayan tek gerçek kaldıraç, ses dosyasının normalize edilmesi
+(bkz. test_tts_normalize.py). Kaynağı geri plana almak kullanıcının kendi
+oynatıcısından yapılır.
 """
 
 import sys
@@ -31,188 +37,50 @@ def _cleanup():
 def _make(monkeypatch, volume=0.8):
     monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())
     calls = []
-    monkeypatch.setattr(tts_mod, "_system_volume", lambda: volume)
-    monkeypatch.setattr(tts_mod, "_set_system_volume", lambda v: calls.append(v))
-    t = TextToSpeech(config={"target_lang": "tr", "duck_volume": 0.25})
+    # Sistem sesi yardımcıları kaldırıldı; varsa çağrıldığını yakalamak için
+    # geçici olarak enjekte ediyoruz.
+    monkeypatch.setattr(tts_mod, "_set_system_volume",
+                        lambda v: calls.append(v), raising=False)
+    t = TextToSpeech(config={"target_lang": "tr"})
     t._enabled = True
     return t, calls
 
 
+def test_playing_does_not_change_system_volume(monkeypatch):
+    """Kullanıcının ses seviyesi uygulamanın işi değil.
 
-
-def test_unduck_restores_original_volume(monkeypatch):
-    t, calls = _make(monkeypatch, volume=0.8)
-    t._duck()
-    t._unduck()
-    assert calls[-1] == 0.8
-
-
-def test_duck_is_idempotent(monkeypatch):
-    """Üst üste duck çağrısı orijinal seviyeyi kaybetmemeli."""
-    t, calls = _make(monkeypatch, volume=0.8)
-    t._duck()
-    t._duck()
-    t._unduck()
-    assert calls[-1] == 0.8, calls
-
-
-def test_unduck_without_duck_is_noop(monkeypatch):
-    t, calls = _make(monkeypatch, volume=0.8)
-    t._unduck()
-    assert calls == []
-
-
-
-def test_boost_can_be_disabled(monkeypatch):
-    """duck_volume=1.0 -> seviye hiç değiştirilmez (kapalı)."""
-    monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())
-    calls = []
-    monkeypatch.setattr(tts_mod, "_system_volume", lambda: 0.8)
-    monkeypatch.setattr(tts_mod, "_set_system_volume", lambda v: calls.append(v))
-    t = TextToSpeech(config={"target_lang": "tr", "duck_volume": 1.0})
-    t._duck()
-    assert calls == []
-
-
-def test_stop_restores_volume(monkeypatch):
-    """Uygulama kapanırken kullanıcının seviyesi geri verilmeli."""
-    t, calls = _make(monkeypatch, volume=0.8)
-    t._duck()
-    t.stop()
-    assert calls[-1] == 0.8
-
-
-def test_flush_restores_volume(monkeypatch):
-    """TTS kapatılınca (toggle) ses geri gelmeli."""
-    t, calls = _make(monkeypatch, volume=0.8)
-    t._duck()
+    Hem kısmak hem yükseltmek denendi; ikisi de kaynağı ve çeviriyi eşit
+    etkilediği için işe yaramadı, üstelik kullanıcının seviyesini habersiz
+    değiştiriyordu. Oynatma yolunun tamamı sürülür — asıl çağrılar orada."""
+    t, calls = _make(monkeypatch, volume=0.94)
+    t._normalized_path = lambda p: p          # dosya dönüşümünü atla
+    t._play_file = lambda p: None             # native oynatıcıyı atla
+    t._synthesize_and_play("merhaba")
     t._flush()
-    assert calls[-1] == 0.8
+    t.stop()
+    assert calls == [], f"sistem sesi değiştirildi: {calls}"
 
 
-def test_tts_plays_at_full_scale(monkeypatch):
-    """TTS oynatıcı tam ölçekte çalmalı.
+def test_no_duck_helpers_remain(monkeypatch):
+    """Ducking tamamen kaldırıldı — ölü kod bırakma."""
+    assert not hasattr(TextToSpeech, "_duck")
+    assert not hasattr(TextToSpeech, "_unduck")
+    assert not hasattr(TextToSpeech, "_release_duck_if_idle")
 
-    Ölçüldü: Piper'ın ürettiği WAV zaten tepe genlikte (32767/32767, %100
-    doluluk). setVolume_ 1.0 üstünü kabul ediyormuş gibi görünse de yükselecek
-    baş boşluk yok — sadece kırpma olur."""
-    t, _ = _make(monkeypatch, volume=0.8)
-    t._duck()
+
+def test_player_plays_at_full_scale(monkeypatch):
+    """Oynatıcı kazancı 1.0 — yükseltme dosyanın kendisinde yapılıyor."""
+    t, _ = _make(monkeypatch)
     assert t._player_gain() == 1.0
 
 
-
-
-def test_ducking_raises_system_volume_to_keep_tts_audible(monkeypatch):
-    """Konuşma sırasında sistem sesi kullanıcının seviyesinin ÜSTÜNE çıkmalı."""
-    t, calls = _make(monkeypatch, volume=0.5)
-    t._duck()
-    assert calls[0] > 0.5, f"sistem sesi yükseltilmedi: {calls}"
-
-
-def test_system_volume_never_exceeds_maximum(monkeypatch):
-    """Telafi 1.0'ı aşamaz — macOS reddeder."""
-    t, calls = _make(monkeypatch, volume=0.9)
-    t._duck()
-    assert calls[0] <= 1.0
-
-
-def test_original_volume_is_restored_after_speaking(monkeypatch):
-    """Yükseltilmiş seviye kalıcı olmamalı."""
-    t, calls = _make(monkeypatch, volume=0.5)
-    t._duck()
-    t._unduck()
-    assert calls[-1] == 0.5
-
-
-def test_tts_effective_level_beats_pre_duck_source(monkeypatch):
-    """Asıl iddia: çeviri en az kullanıcının kendi seviyesi kadar duyulur."""
-    t, calls = _make(monkeypatch, volume=0.5)
-    t._duck()
-    assert calls[0] >= 0.5
-
-
-def test_warns_when_no_headroom_to_boost(monkeypatch):
-    """Sistem sesi tavandaysa yükseltme etkisiz — kullanıcı nedenini bilmeli.
-
-    Kullanıcı %100'de çalışırken "TTS yükselmiyor" diye bildirdi; kod doğru
-    çalışıyordu ama yükseltecek yer yoktu ve bunu hiçbir yerde söylemiyordu."""
-    monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())
-    monkeypatch.setattr(tts_mod, "_system_volume", lambda: 0.97)
-    monkeypatch.setattr(tts_mod, "_set_system_volume", lambda v: None)
-    warned = []
-    t = TextToSpeech(config={"target_lang": "tr"}, on_error=warned.append)
-    t._duck()
-    assert warned, "baş boşluk yokken uyarı verilmedi"
-    assert "volume" in warned[0].lower()
-
-
-def test_no_warning_when_headroom_exists(monkeypatch):
-    t, _ = _make(monkeypatch, volume=0.5)
-    warned = []
-    t._on_error = warned.append
-    t._duck()
-    assert warned == []
-
-
-def test_headroom_warning_is_reported_once(monkeypatch):
-    """Her satırda tekrarlamamalı."""
-    monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())
-    monkeypatch.setattr(tts_mod, "_system_volume", lambda: 1.0)
-    monkeypatch.setattr(tts_mod, "_set_system_volume", lambda v: None)
-    warned = []
-    t = TextToSpeech(config={"target_lang": "tr"}, on_error=warned.append)
-    for _ in range(4):
-        t._duck()
-        t._unduck()
-    assert len(warned) == 1, warned
-
-
-# --- Seviye değişimini konuşma boyunca koru ---
-# Her satırda yükseltip geri almak sesi dalgalandırıyordu. Tercüman pasajı
-# bitirene kadar sözü bırakmaz: seviye kuyruk boşalana kadar korunur.
-
-def test_volume_is_not_restored_between_lines(monkeypatch):
-    """Kuyrukta iş varken ses geri yükselmemeli."""
-    t, calls = _make(monkeypatch, volume=0.8)
-    t._duck()
-    calls.clear()
-    t.speak("sonraki satır")        # kuyrukta iş var
-    t._release_duck_if_idle()
-    assert calls == [], "satırlar arasında ses yükseldi"
-
-
-def test_volume_restored_once_queue_drains(monkeypatch):
-    """Konuşacak bir şey kalmayınca ses geri gelmeli."""
-    t, calls = _make(monkeypatch, volume=0.8)
-    t._duck()
-    calls.clear()
-    t._release_duck_if_idle()       # kuyruk boş
-    assert calls == [0.8]
-
-
-def test_release_is_safe_without_duck(monkeypatch):
-    t, calls = _make(monkeypatch, volume=0.8)
-    t._release_duck_if_idle()
+def test_stop_does_not_touch_volume(monkeypatch):
+    t, calls = _make(monkeypatch)
+    t.stop()
     assert calls == []
 
 
-def test_stop_restores_even_with_queued_speech(monkeypatch):
-    """Kapanışta kuyruk dolu olsa da kullanıcının sesi geri verilmeli."""
-    t, calls = _make(monkeypatch, volume=0.8)
-    t._duck()
-    t.speak("bekleyen")
-    t.stop()
-    assert calls[-1] == 0.8
-
-
-def test_volume_read_failure_disables_ducking(monkeypatch):
-    """Sistem sesi okunamazsa dokunulmamalı."""
-    monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())
-    calls = []
-    monkeypatch.setattr(tts_mod, "_system_volume", lambda: None)
-    monkeypatch.setattr(tts_mod, "_set_system_volume", lambda v: calls.append(v))
-    t = TextToSpeech(config={"target_lang": "tr", "duck_volume": 0.25})
-    t._duck()
-    t._unduck()
+def test_flush_does_not_touch_volume(monkeypatch):
+    t, calls = _make(monkeypatch)
+    t._flush()
     assert calls == []
