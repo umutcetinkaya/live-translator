@@ -9,6 +9,7 @@ DEFAULTS = {
     "translation_provider": "openai",
     "openai_api_key": "",
     "gemini_api_key": "",
+    "anthropic_api_key": "",
     "source_lang": "en",
     "source_locale": "en-US",
     "target_lang": "tr",
@@ -22,6 +23,7 @@ DEFAULTS = {
 MODELS = {
     "openai": ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5.5"],
     "gemini": ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash"],
+    "claude": ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
 }
 
 
@@ -88,3 +90,7 @@ RECOGNITION_TIMEOUT = 50
 SILENCE_THRESHOLD = 2.0
 MIN_SEGMENT_LENGTH = 3
 OVERLAY_OPACITY = 0.95
+
+# Word limit for the sliding window sent to translation. Older transcript
+# beyond this is dropped; the previous translation carries context forward.
+CONTEXT_WINDOW_WORDS = 1200
