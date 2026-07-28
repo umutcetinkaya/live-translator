@@ -94,7 +94,8 @@ def test_unpunctuated_speech_still_yields_a_segment():
     Eşik = segment boyutu + kararsız kuyruk; altında beklemek doğru."""
     text = ("hello and welcome back to the channel today we are looking at "
             "how large language models handle real time translation and why "
-            "latency matters")
+            "latency matters so much when you are watching a live stream with "
+            "subtitles running at the bottom of your screen right now")
     stable, tail = stable_prefix(text)
     assert stable, "noktalamasız metin hiç çevrilemiyordu"
 
@@ -167,3 +168,39 @@ def test_segments_reconstruct_the_source():
     segs = _incremental_segments(words)
     joined = " ".join(segs).split()
     assert joined == words[:len(joined)], joined[:12]
+
+
+# --- Segment boyutu ve çeviri kalitesi ---
+# Yarım cümle hiçbir dile düzgün çevrilemez: Türkçe/Japonca/Korece/Almanca
+# fiili sona koyar, yani İngilizce cümlenin yarısında hedef dilin ana fiili
+# henüz gelmemiştir. Ölçüldü: 14 kelimelik parça "Bugün bakıyoruz nasıl büyük"
+# üretiyordu; tam düşünce "Bugün büyük dil modellerinin ... inceliyoruz."
+
+def test_segment_is_long_enough_for_a_complete_thought():
+    """Segment, tam bir düşünce taşıyacak kadar uzun olmalı."""
+    import segmenter
+    assert segmenter.UNPUNCTUATED_SEGMENT_WORDS >= 24
+
+
+def test_segments_carry_a_full_thought():
+    words = ("hello and welcome back to the channel today we are looking at "
+             "how large language models handle real time translation and why "
+             "latency matters so much when you are watching a live stream "
+             "with subtitles running at the bottom of your screen").split()
+    segs = _incremental_segments(words)
+    assert segs, "hiç segment üretilmedi"
+    for s in segs:
+        assert len(s.split()) >= 12, f"çok kısa segment: {s!r}"
+
+
+def test_pause_flushes_pending_text():
+    """Konuşmacı durunca bekleyen metin çevrilmeli — yoksa son cümle kaybolur."""
+    from segmenter import flush_prefix
+    settled, tail = flush_prefix("a short trailing thought")
+    assert settled == "a short trailing thought"
+    assert tail == ""
+
+
+def test_flush_is_noop_on_empty():
+    from segmenter import flush_prefix
+    assert flush_prefix("") == ("", "")

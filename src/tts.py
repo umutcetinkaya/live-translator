@@ -20,6 +20,10 @@ from providers.base import ProviderError
 # translation quiet as well — 0.25 was low enough that users reported the
 # spoken translation getting quiet along with the source. 0.45 keeps the
 # source clearly in the background while leaving the translation audible.
+# Lines allowed to wait for the voice. Small on purpose: a backlog means the
+# spoken translation is trailing the picture, which defeats the point.
+MAX_QUEUED_SPEECH = 3
+
 DUCK_VOLUME = 0.45
 
 # Never duck below this absolute level: at a low system setting, a purely
@@ -124,8 +128,20 @@ class TextToSpeech:
         self._provider = get_tts_provider(config)
 
     def speak(self, text):
+        """Queue a translation to be spoken, oldest first.
+
+        Synthesis is slower than translation (markedly so with the offline
+        voice), so an unbounded queue drifts further behind the video the
+        longer it runs. Past the cap the oldest pending line is dropped: being
+        a few lines behind is worse than missing one."""
         if not self._enabled or not text:
             return
+        while self._queue.qsize() >= MAX_QUEUED_SPEECH:
+            try:
+                dropped = self._queue.get_nowait()
+                print(f"[TTS] Behind — skipping: {dropped[:40]}")
+            except queue.Empty:
+                break
         self._queue.put(text)
 
     def _start_worker(self):

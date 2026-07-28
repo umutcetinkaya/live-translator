@@ -32,7 +32,7 @@ class TranslationPipeline:
         self._recognizer = RealtimeSpeechRecognizer(
             locale=self._locale,
             on_partial=self._on_partial,
-            on_segment=self._on_segment,
+            on_segment=self._on_segment_final,
             config=self._config,
             on_no_speech=self._on_no_speech,
         )
@@ -122,7 +122,7 @@ class TranslationPipeline:
         self._recognizer = RealtimeSpeechRecognizer(
             locale=self._locale,
             on_partial=self._on_partial,
-            on_segment=self._on_segment,
+            on_segment=self._on_segment_final,
             config=self._config,
             on_no_speech=self._on_no_speech,
         )
@@ -195,6 +195,11 @@ class TranslationPipeline:
         """Put TTS failures on screen — they used to only reach the terminal,
         so a bad key or a missing voice model looked like nothing happening."""
         self._overlay.update_original_on_main_thread(f"🔇 {message}")
+
+    def _on_segment_final(self, text):
+        """Recognition finalised an utterance — a pause, so flush the tail."""
+        self._on_segment(text)
+        self._translator.on_speech_pause()
 
     def _on_no_speech(self):
         if not self._finalized_text and not self._current_partial:

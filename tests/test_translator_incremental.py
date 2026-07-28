@@ -172,3 +172,32 @@ def test_multiple_sentences_arrive_together(monkeypatch):
     t.update_source("One. Two.")
     t._translate_pending()
     assert prov.translate_segment.call_args.args[0] == "One. Two."
+
+
+# --- Duraklamada bekleyen metni çevir ---
+# Kalite için tam düşünce bekleniyor; konuşmacı durursa bekleyen metin
+# asılı kalmamalı.
+
+def test_pause_flushes_short_pending_text(monkeypatch):
+    """Konuşma durunca eşiğin altındaki metin de çevrilmeli."""
+    t, prov = _make(monkeypatch, ["Kısa bir düşünce."])
+    t.update_source("a short trailing thought with no punctuation")
+    t._translate_pending()          # eşik altı — henüz çevirmez
+    assert not prov.translate_segment.called
+    t.on_speech_pause()             # konuşmacı durdu
+    assert prov.translate_segment.called
+
+
+def test_pause_with_nothing_pending_is_noop(monkeypatch):
+    t, prov = _make(monkeypatch)
+    t.on_speech_pause()
+    assert not prov.translate_segment.called
+
+
+def test_pause_does_not_retranslate_committed_text(monkeypatch):
+    t, prov = _make(monkeypatch, ["Bir.", "İki."])
+    t.update_source("First sentence here.")
+    t._translate_pending()
+    prov.translate_segment.reset_mock()
+    t.on_speech_pause()             # yeni bir şey yok
+    assert not prov.translate_segment.called

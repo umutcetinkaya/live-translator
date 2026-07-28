@@ -60,7 +60,14 @@ def split_sentences(text):
 # SFSpeechRecognizer emits no punctuation, so sentence boundaries alone would
 # never fire and nothing would ever be translated. Past this many unsettled
 # words the text is chunked anyway.
-UNPUNCTUATED_SEGMENT_WORDS = 14
+#
+# Sized to carry a complete thought, not just a fixed span. Half a sentence
+# translates badly into any language whose word order differs from English —
+# Turkish, Japanese, Korean and German all put the verb last, so a fragment
+# cut before the English verb leaves the model nothing to build on. Measured:
+# a 14-word cut produced "Bugün bakıyoruz nasıl büyük" (word salad); the full
+# thought produced "Bugün büyük dil modellerinin ... inceliyoruz."
+UNPUNCTUATED_SEGMENT_WORDS = 28
 
 # Words held back as unstable. Recognition keeps revising the most recent
 # words, and committing them would freeze text that is about to change.
@@ -96,3 +103,14 @@ def stable_prefix(text):
             settled = (settled + " " + " ".join(words[:cut])).strip()
             tail = " ".join(words[cut:])
     return settled, tail
+
+
+def flush_prefix(text):
+    """Treat everything as settled — for when the speaker has stopped.
+
+    Waiting for a full segment keeps quality up while speech is flowing, but
+    at a pause the remaining words would hang untranslated. A silence means
+    the thought is finished, so it is safe to commit."""
+    if not text or not text.strip():
+        return "", ""
+    return text.strip(), ""

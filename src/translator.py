@@ -14,7 +14,7 @@ import time
 from config import load_config, normalize_model
 from providers import get_translation_provider
 from providers.base import ProviderError
-from segmenter import split_sentences, stable_prefix
+from segmenter import split_sentences, stable_prefix, flush_prefix
 
 # Prior source sentences handed to the translator as background. Deliberately
 # small: with a few hundred tokens of context, models start repeating earlier
@@ -106,14 +106,23 @@ class AITranslator:
                 break
             self._translate_pending()
 
-    def _translate_pending(self):
+    def on_speech_pause(self):
+        """Speaker stopped — translate whatever is still waiting.
+
+        Segments are held until they carry a full thought, which would leave
+        the last words of an utterance stranded. A pause means the thought is
+        over, so it is safe to commit."""
+        self._translate_pending(flush=True)
+
+    def _translate_pending(self, flush=False):
         """Translate whatever settled source hasn't been translated yet.
 
-        Only complete sentences are translated; the trailing partial is left
-        alone because recognition may still rewrite it."""
+        Only complete thoughts are translated; the trailing partial is left
+        alone because recognition may still rewrite it. `flush` overrides that
+        and commits everything, for when speech has stopped."""
         with self._lock:
             source = self._source_buffer
-        settled, _tail = stable_prefix(source)
+        settled, _tail = flush_prefix(source) if flush else stable_prefix(source)
         if not settled:
             return
 
