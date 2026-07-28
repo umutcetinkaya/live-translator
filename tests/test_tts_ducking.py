@@ -168,6 +168,45 @@ def test_gain_resets_after_unduck(monkeypatch):
     assert t._player_gain() == 1.0
 
 
+# --- Konuşmalar arası ducking'i koru ---
+# Her cümlede kısıp açmak sesi dalgalandırıyordu: kaynak ses TTS satırları
+# arasında yükselip alçalıyor. Simültane tercüman gibi olması için kısma
+# konuşma boyunca sürmeli, kuyruk boşalınca bırakılmalı.
+
+def test_volume_is_not_restored_between_lines(monkeypatch):
+    """Kuyrukta iş varken ses geri yükselmemeli."""
+    t, calls = _make(monkeypatch, volume=0.8)
+    t._duck()
+    calls.clear()
+    t.speak("sonraki satır")        # kuyrukta iş var
+    t._release_duck_if_idle()
+    assert calls == [], "satırlar arasında ses yükseldi"
+
+
+def test_volume_restored_once_queue_drains(monkeypatch):
+    """Konuşacak bir şey kalmayınca ses geri gelmeli."""
+    t, calls = _make(monkeypatch, volume=0.8)
+    t._duck()
+    calls.clear()
+    t._release_duck_if_idle()       # kuyruk boş
+    assert calls == [0.8]
+
+
+def test_release_is_safe_without_duck(monkeypatch):
+    t, calls = _make(monkeypatch, volume=0.8)
+    t._release_duck_if_idle()
+    assert calls == []
+
+
+def test_stop_restores_even_with_queued_speech(monkeypatch):
+    """Kapanışta kuyruk dolu olsa da kullanıcının sesi geri verilmeli."""
+    t, calls = _make(monkeypatch, volume=0.8)
+    t._duck()
+    t.speak("bekleyen")
+    t.stop()
+    assert calls[-1] == 0.8
+
+
 def test_volume_read_failure_disables_ducking(monkeypatch):
     """Sistem sesi okunamazsa kısma denenmemeli — sessiz kalmaktansa üst üste bin."""
     monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())

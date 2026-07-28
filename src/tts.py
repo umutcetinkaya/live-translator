@@ -24,19 +24,20 @@ from providers.base import ProviderError
 # spoken translation is trailing the picture, which defeats the point.
 MAX_QUEUED_SPEECH = 3
 
-DUCK_VOLUME = 0.45
+DUCK_VOLUME = 0.30
 
 # Never duck below this absolute level: at a low system setting, a purely
-# relative duck would take the translation down with the source.
-DUCK_FLOOR = 0.30
+# relative duck would take the translation down with the source. Kept low so
+# the source really does drop into the background.
+DUCK_FLOOR = 0.18
 
 # Extra headroom on top of pure compensation, so the translation sits clearly
 # above the ducked source rather than merely matching its pre-duck level.
-TTS_BOOST = 1.3
+TTS_BOOST = 2.0
 
 # Ceiling on software gain — past this, quiet recordings clip instead of
 # getting louder.
-MAX_PLAYER_GAIN = 4.0
+MAX_PLAYER_GAIN = 8.0
 
 
 def _system_volume():
@@ -200,6 +201,16 @@ class TextToSpeech:
         self._ducked_level = None
         _set_system_volume(level)
 
+    def _release_duck_if_idle(self):
+        """Restore the volume only once there is nothing left to say.
+
+        Ducking per line made the source audio surge back up between spoken
+        lines, so the background kept rising and falling. An interpreter holds
+        the floor for the whole passage, so the duck is held until the queue
+        drains."""
+        if self._queue.empty():
+            self._unduck()
+
     def _report_error(self, message):
         """Surface a failure to the user, once per distinct problem.
 
@@ -246,7 +257,9 @@ class TextToSpeech:
                 player.stop()
                 self._current_player = None
             finally:
-                self._unduck()
+                # Hold the duck if more lines are waiting — restoring between
+                # every line makes the background audio pump up and down.
+                self._release_duck_if_idle()
 
     def _flush(self):
         self._unduck()   # never leave the user's volume turned down
