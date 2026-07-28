@@ -57,14 +57,42 @@ def split_sentences(text):
     return out
 
 
-def stable_prefix(text):
-    """Split into (settled sentences, unstable tail).
+# SFSpeechRecognizer emits no punctuation, so sentence boundaries alone would
+# never fire and nothing would ever be translated. Past this many unsettled
+# words the text is chunked anyway.
+UNPUNCTUATED_SEGMENT_WORDS = 14
 
-    The tail is whatever follows the last sentence-ending punctuation. Speech
-    recognition can still rewrite it, so it must not be committed."""
+# Words held back as unstable. Recognition keeps revising the most recent
+# words, and committing them would freeze text that is about to change.
+UNSTABLE_TAIL_WORDS = 6
+
+
+def stable_prefix(text):
+    """Split into (settled text, unstable tail).
+
+    With punctuation, the boundary is the last sentence end. Without it — the
+    normal case for on-device recognition — fall back to a word count, keeping
+    the most recent words unstable because they are the ones still being
+    revised."""
     sentences = split_sentences(text)
     if not sentences:
         return "", ""
+
     if sentences[-1].endswith(tuple(_SENTENCE_PUNCT)):
         return " ".join(sentences), ""
-    return " ".join(sentences[:-1]), sentences[-1]
+
+    settled = " ".join(sentences[:-1])
+    tail = sentences[-1]
+
+    # No sentence end in the tail: chunk it by word count instead. The cut is
+    # snapped to a multiple of the segment size so the boundary only advances
+    # once per full segment — cutting at "whatever is over the threshold"
+    # produces one segment per new word, and so one API call per word.
+    words = tail.split()
+    if len(words) >= UNPUNCTUATED_SEGMENT_WORDS + UNSTABLE_TAIL_WORDS:
+        cut = (len(words) - UNSTABLE_TAIL_WORDS) // UNPUNCTUATED_SEGMENT_WORDS
+        cut *= UNPUNCTUATED_SEGMENT_WORDS
+        if cut > 0:
+            settled = (settled + " " + " ".join(words[:cut])).strip()
+            tail = " ".join(words[cut:])
+    return settled, tail
