@@ -21,6 +21,37 @@ import collections
 
 RESTART_INTERVAL = 50
 
+# Silence is reported as an error by SFSpeechRecognizer, but it is not a
+# failure — it just means this stretch of audio had no speech. Restarting on it
+# spins: the new session hits the same silence and errors again immediately.
+# Measured live: kAFAssistantErrorDomain 1110 during quiet system audio.
+_AF_DOMAIN = "kAFAssistantErrorDomain"
+_NO_SPEECH_CODES = (1110, 1107)
+
+BASE_RESTART_DELAY = 0.3
+MAX_RESTART_DELAY = 5.0
+
+# How long a session may sit without any speech before it is rebuilt. Long
+# enough to sit through natural pauses and quiet passages.
+WATCHDOG_TIMEOUT = 20
+
+
+def _is_fatal_error(error):
+    """True when an error warrants tearing down and rebuilding the session."""
+    if error is None:
+        return False
+    try:
+        if str(error.domain()) == _AF_DOMAIN and error.code() in _NO_SPEECH_CODES:
+            return False
+    except Exception:
+        return True   # can't classify it — assume it's real
+    return True
+
+
+def _restart_delay(attempt):
+    """Exponential backoff so repeated failures don't burn CPU."""
+    return min(BASE_RESTART_DELAY * (2 ** attempt), MAX_RESTART_DELAY)
+
 
 class RealtimeSpeechRecognizer:
 
@@ -39,6 +70,7 @@ class RealtimeSpeechRecognizer:
         self._restart_timer = None
         self._last_partial_time = time.time()
         self._pending_buffers = collections.deque(maxlen=80)
+        self._restart_attempts = 0
 
     def _request_authorization(self):
         event = threading.Event()
@@ -57,6 +89,27 @@ class RealtimeSpeechRecognizer:
         self._new_session()
         self._start_watchdog()
         print(f"[STT] Started ({self._locale})")
+
+    def _schedule_restart(self, fatal):
+        """Queue a session rebuild, backing off when failures repeat.
+
+        A normal end-of-utterance restart is prompt; a failing recogniser backs
+        off so a persistent fault doesn't spin the CPU."""
+        if not self._running or self._restarting:
+            return
+        self._restarting = True
+        if fatal:
+            delay = _restart_delay(self._restart_attempts)
+            self._restart_attempts += 1
+            if self._restart_attempts <= 3 or self._restart_attempts % 20 == 0:
+                print(f"[STT] Restarting after error "
+                      f"(attempt {self._restart_attempts}, {delay:.1f}s)")
+        else:
+            delay = BASE_RESTART_DELAY
+            self._restart_attempts = 0
+        t = threading.Timer(delay, self._new_session)
+        t.daemon = True
+        t.start()
 
     def _new_session(self):
         if not self._running:
@@ -81,9 +134,12 @@ class RealtimeSpeechRecognizer:
 
         def on_result(result, error):
             if error:
-                if self._running and not self._restarting:
-                    self._restarting = True
-                    threading.Timer(0.3, self._new_session).start()
+                if not _is_fatal_error(error):
+                    # Just silence. The watchdog will rebuild the session if
+                    # this really is a stuck recogniser; restarting here would
+                    # spin, since the next session meets the same silence.
+                    return
+                self._schedule_restart(fatal=True)
                 return
 
             if result is None:
@@ -93,15 +149,14 @@ class RealtimeSpeechRecognizer:
             if text and text != self._last_text:
                 self._last_text = text
                 self._last_partial_time = time.time()
+                self._restart_attempts = 0   # audio is flowing again
                 if self._on_partial:
                     self._on_partial(text)
 
             if result.isFinal():
                 if text and self._on_segment:
                     self._on_segment(text)
-                if self._running and not self._restarting:
-                    self._restarting = True
-                    threading.Timer(0.3, self._new_session).start()
+                self._schedule_restart(fatal=False)
 
         self._task = self._recognizer.recognitionTaskWithRequest_resultHandler_(
             self._request, on_result
@@ -141,15 +196,26 @@ class RealtimeSpeechRecognizer:
         threading.Timer(0.3, self._new_session).start()
 
     def _start_watchdog(self):
-        """Auto-recover if no speech detected for 10 seconds."""
+        """Rebuild the session if it goes quiet for too long.
+
+        Silence alone is not a fault — the user may simply not be playing
+        audio — so the hint fires once per quiet stretch rather than on every
+        sweep, and the rebuild waits long enough to not fight normal pauses."""
         def check():
+            hinted = False
             while self._running:
                 time.sleep(5)
                 if not self._running:
                     break
                 elapsed = time.time() - self._last_partial_time
-                if elapsed > 10 and not self._restarting:
-                    print("[STT] WATCHDOG: No speech for 10s, forcing restart")
+                if elapsed <= WATCHDOG_TIMEOUT:
+                    hinted = False
+                    continue
+                if self._restarting:
+                    continue
+                if not hinted:
+                    hinted = True
+                    print(f"[STT] No speech for {WATCHDOG_TIMEOUT}s — rebuilding session")
                     if self._on_no_speech:
                         try:
                             self._on_no_speech()
