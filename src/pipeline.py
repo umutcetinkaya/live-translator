@@ -26,6 +26,7 @@ class TranslationPipeline:
         self._translator = AITranslator(
             on_translation=self._on_translation,
             config=self._config,
+            on_error=self._on_translate_error,
         )
 
         self._recognizer = RealtimeSpeechRecognizer(
@@ -40,7 +41,7 @@ class TranslationPipeline:
             on_audio_buffer=self._on_audio
         )
 
-        self._tts = TextToSpeech(config=self._config)
+        self._tts = TextToSpeech(config=self._config, on_error=self._on_tts_error)
         self._tts.set_language(self._config.get("target_lang", "tr"))
 
         self._running = False
@@ -185,6 +186,15 @@ class TranslationPipeline:
         provider = self._config.get("translation_provider", "openai")
         rate = RATE_GEMINI if provider == "gemini" else RATE_OPENAI
         return resample_s16(raw, rate_out=rate)
+
+    def _on_translate_error(self, message):
+        """Put translation failures on screen instead of only in the terminal."""
+        self._overlay.update_original_on_main_thread(f"⚠️ {message}")
+
+    def _on_tts_error(self, message):
+        """Put TTS failures on screen — they used to only reach the terminal,
+        so a bad key or a missing voice model looked like nothing happening."""
+        self._overlay.update_original_on_main_thread(f"🔇 {message}")
 
     def _on_no_speech(self):
         if not self._finalized_text and not self._current_partial:

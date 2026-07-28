@@ -7,6 +7,20 @@ from providers import get_translation_provider
 from providers.base import ProviderError
 
 
+def _friendly(message):
+    """Turn a provider error into something the user can act on."""
+    low = message.lower()
+    if "no api key" in low or "authentication" in low or "401" in low:
+        return "Translation API key missing or invalid — check Settings"
+    if "rate_limit" in low or "429" in low:
+        return "Rate limit reached — the provider is throttling requests"
+    if "credit" in low or "quota" in low or "billing" in low:
+        return "Provider quota or billing issue — check your account"
+    if "connection" in low or "timeout" in low:
+        return "Network problem reaching the translation provider"
+    return f"Translation failed: {message}"
+
+
 class AITranslator:
     # Tuned for perceived latency: at 3.0s/20 chars a speaker could wait two
     # cycles (~6s) before seeing anything. 1.2s with a lower char floor keeps
@@ -14,8 +28,10 @@ class AITranslator:
     TRANSLATE_INTERVAL = 1.2
     MIN_NEW_CHARS = 12
 
-    def __init__(self, on_translation=None, config=None):
+    def __init__(self, on_translation=None, config=None, on_error=None):
         self._on_full_update = on_translation
+        self._on_error = on_error
+        self._last_error = None
         self._config = config or load_config()
         self._provider = get_translation_provider(self._config)
         self._target_lang = self._config.get("target_lang", "tr")
@@ -124,10 +140,26 @@ class AITranslator:
             )
             if result:
                 self._last_translation = result
+                self._last_error = None
                 print(f"[Translator] Updated ({len(result.split())} words)")
                 if self._on_full_update:
                     self._on_full_update(result)
         except ProviderError as e:
-            print(f"[Translator] Error: {e}")
+            self._report_error(str(e))
         except Exception as e:
-            print(f"[Translator] Unexpected: {e}")
+            self._report_error(f"Unexpected: {e}")
+
+    def _report_error(self, message):
+        """Surface a failure on screen, once per distinct problem.
+
+        Translation runs every cycle, so an unresolved fault would otherwise
+        repeat every couple of seconds."""
+        print(f"[Translator] Error: {message}")
+        if message == self._last_error:
+            return
+        self._last_error = message
+        if self._on_error:
+            try:
+                self._on_error(_friendly(message))
+            except Exception:
+                pass
