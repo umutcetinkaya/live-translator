@@ -31,6 +31,3 @@ def test_normalize_model_claude_fallback():
     assert normalize_model("gpt-5.5", "claude") == "claude-haiku-4-5"
     assert normalize_model("claude-sonnet-5", "claude") == "claude-sonnet-5"
 
-def test_context_window_words_is_positive():
-    from config import CONTEXT_WINDOW_WORDS
-    assert CONTEXT_WINDOW_WORDS > 0

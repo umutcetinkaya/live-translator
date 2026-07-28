@@ -10,7 +10,9 @@ The system prompt is a single cached block: the same prefix is re-sent every
 a byte change in the prefix would invalidate the cache.
 """
 
-from providers.base import TranslationProvider, ProviderError
+from providers.base import (TranslationProvider, ProviderError,
+                            SEGMENT_SYSTEM_PROMPT, SEGMENT_MAX_TOKENS,
+                            build_segment_prompt)
 
 # Frozen — must stay byte-identical across calls for the prompt cache to hit.
 SYSTEM_PROMPT = """\
@@ -54,6 +56,33 @@ _MODEL_TUNING = {
 class ClaudeTranslationProvider(TranslationProvider):
     def __init__(self, client):
         self._client = client
+
+    def translate_segment(self, segment, context, target_lang, model):
+        if not segment or not segment.strip():
+            return ""
+        if not self._client:
+            raise ProviderError("Claude: no API key")
+        params = {
+            "model": model,
+            "max_tokens": SEGMENT_MAX_TOKENS,
+            "system": [{
+                "type": "text",
+                "text": SEGMENT_SYSTEM_PROMPT,
+                "cache_control": {"type": "ephemeral"},
+            }],
+            "messages": [{
+                "role": "user",
+                "content": build_segment_prompt(segment, context, target_lang),
+            }],
+        }
+        params.update(_MODEL_TUNING.get(model, {}))
+        try:
+            resp = self._client.messages.create(**params)
+            parts = [b.text for b in resp.content
+                     if getattr(b, "type", None) == "text"]
+            return "".join(parts).strip()
+        except Exception as e:
+            raise ProviderError(f"Claude translation error: {e}") from e
 
     def translate_document(self, source, prev_translation, target_lang, model):
         if not self._client:

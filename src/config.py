@@ -91,6 +91,3 @@ SILENCE_THRESHOLD = 2.0
 MIN_SEGMENT_LENGTH = 3
 OVERLAY_OPACITY = 0.95
 
-# Word limit for the sliding window sent to translation. Older transcript
-# beyond this is dropped; the previous translation carries context forward.
-CONTEXT_WINDOW_WORDS = 1200

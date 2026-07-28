@@ -3,7 +3,8 @@
 import os
 import wave
 import tempfile
-from providers.base import TranslationProvider, TTSProvider, ProviderError
+from providers.base import (TranslationProvider, TTSProvider, ProviderError,
+                            SEGMENT_SYSTEM_PROMPT, build_segment_prompt)
 
 SYSTEM_PROMPT = """\
 You are a live document translator. You maintain a growing translated document.
@@ -15,6 +16,20 @@ document. Natural flowing {target_lang}. No commentary."""
 class GeminiTranslationProvider(TranslationProvider):
     def __init__(self, client):
         self._client = client
+
+    def translate_segment(self, segment, context, target_lang, model):
+        if not segment or not segment.strip():
+            return ""
+        if not self._client:
+            raise ProviderError("Gemini: no API key")
+        prompt = (f"{SEGMENT_SYSTEM_PROMPT}\n\n"
+                  + build_segment_prompt(segment, context, target_lang))
+        try:
+            resp = self._client.models.generate_content(model=model,
+                                                        contents=prompt)
+            return (resp.text or "").strip()
+        except Exception as e:
+            raise ProviderError(f"Gemini translation error: {e}") from e
 
     def translate_document(self, source, prev_translation, target_lang, model):
         if not self._client:

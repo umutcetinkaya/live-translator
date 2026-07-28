@@ -2,7 +2,9 @@
 
 import os
 import tempfile
-from providers.base import TranslationProvider, TTSProvider, ProviderError
+from providers.base import (TranslationProvider, TTSProvider, ProviderError,
+                            SEGMENT_SYSTEM_PROMPT, SEGMENT_MAX_TOKENS,
+                            build_segment_prompt)
 
 SYSTEM_PROMPT = """\
 You are a live document translator. You maintain a growing translated document.
@@ -29,6 +31,32 @@ Rules:
 class OpenAITranslationProvider(TranslationProvider):
     def __init__(self, client):
         self._client = client
+
+    def translate_segment(self, segment, context, target_lang, model):
+        if not segment or not segment.strip():
+            return ""
+        if not self._client:
+            raise ProviderError("OpenAI: no API key")
+        modern = model.startswith("o") or model.startswith("gpt-5")
+        params = {
+            "model": model,
+            "messages": [
+                {"role": "developer" if modern else "system",
+                 "content": SEGMENT_SYSTEM_PROMPT},
+                {"role": "user",
+                 "content": build_segment_prompt(segment, context, target_lang)},
+            ],
+        }
+        if modern:
+            params["max_completion_tokens"] = SEGMENT_MAX_TOKENS
+        else:
+            params["max_tokens"] = SEGMENT_MAX_TOKENS
+            params["temperature"] = 0.2
+        try:
+            resp = self._client.chat.completions.create(**params)
+            return resp.choices[0].message.content.strip()
+        except Exception as e:
+            raise ProviderError(f"OpenAI translation error: {e}") from e
 
     def translate_document(self, source, prev_translation, target_lang, model):
         if not self._client:

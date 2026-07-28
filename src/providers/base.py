@@ -7,12 +7,51 @@ class ProviderError(Exception):
     """All provider errors are wrapped in this type."""
 
 
+SEGMENT_SYSTEM_PROMPT = """\
+You are a simultaneous interpreter producing live subtitles.
+
+You receive:
+1. CONTEXT — earlier speech, for reference only
+2. NEW — the text to translate
+
+Translate ONLY the NEW text. Never translate or repeat the CONTEXT.
+
+Rules:
+- Output only the translation of NEW, nothing else
+- Natural, spoken-register prose in the target language
+- Keep it tight — this is a live subtitle, not an essay
+- Use CONTEXT to resolve pronouns, terminology and tone
+- If NEW ends mid-sentence, translate what is there
+- No commentary, no quotes, no labels"""
+
+# A segment is one or a few sentences, so the reply is short. Bounding it is
+# what stops the truncation the full-document model suffered from.
+SEGMENT_MAX_TOKENS = 1000
+
+
+def build_segment_prompt(segment, context, target_lang):
+    """User message shared by every provider, so they stay consistent."""
+    msg = f"Target language: {target_lang}\n\n"
+    if context:
+        msg += f"CONTEXT (do not translate):\n{context}\n\n"
+    return msg + f"NEW (translate only this):\n{segment}"
+
+
 class TranslationProvider(ABC):
     @abstractmethod
     def translate_document(self, source: str, prev_translation: str,
                            target_lang: str, model: str) -> str:
         """Live-document translation: preserve previous translation, append new content.
         Returns the full up-to-date translation. Raises ProviderError on failure."""
+        raise NotImplementedError
+
+    def translate_segment(self, segment: str, context: str,
+                          target_lang: str, model: str) -> str:
+        """Translate one new segment, using `context` only as background.
+
+        Incremental counterpart to translate_document: the caller commits each
+        result and never asks for it again, so the output stays short and can't
+        be truncated. Returns the translation of `segment` alone."""
         raise NotImplementedError
 
 

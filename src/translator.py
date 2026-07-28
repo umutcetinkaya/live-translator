@@ -1,10 +1,25 @@
-"""Live document translation — provider-agnostic orchestrator."""
+"""Incremental translation — provider-agnostic orchestrator.
+
+Each settled sentence is translated once and then frozen: committed text is
+never re-sent or rewritten. The earlier design re-translated the whole
+transcript every cycle, which grew to 600+ words per call — output hit the
+token ceiling and got truncated, and quality fell as the context grew.
+
+The translator sees only the new sentences plus a couple of earlier ones as
+read-only context.
+"""
 
 import threading
 import time
-from config import load_config, normalize_model, CONTEXT_WINDOW_WORDS
+from config import load_config, normalize_model
 from providers import get_translation_provider
 from providers.base import ProviderError
+from segmenter import split_sentences, stable_prefix
+
+# Prior source sentences handed to the translator as background. Deliberately
+# small: with a few hundred tokens of context, models start repeating earlier
+# sentences instead of translating the new one.
+CONTEXT_SENTENCES = 2
 
 
 def _friendly(message):
@@ -22,11 +37,9 @@ def _friendly(message):
 
 
 class AITranslator:
-    # Tuned for perceived latency: at 3.0s/20 chars a speaker could wait two
-    # cycles (~6s) before seeing anything. 1.2s with a lower char floor keeps
-    # subtitles close to the speech without spamming the API.
-    TRANSLATE_INTERVAL = 1.2
-    MIN_NEW_CHARS = 12
+    # How often to look for newly-settled sentences. Sentence boundaries decide
+    # *what* gets translated; this only decides how often we check.
+    TRANSLATE_INTERVAL = 0.6
 
     def __init__(self, on_translation=None, config=None, on_error=None):
         self._on_full_update = on_translation
@@ -37,11 +50,8 @@ class AITranslator:
         self._target_lang = self._config.get("target_lang", "tr")
         self._lock = threading.Lock()
         self._source_buffer = ""
-        self._last_sent_source = ""
-        self._last_translation = ""
-        self._deferred_source = ""
-        self._window_words = self._config.get("context_window_words",
-                                              CONTEXT_WINDOW_WORDS)
+        self._committed = ""          # frozen translation — never rewritten
+        self._committed_source = ""   # source already translated
         self._running = False
         self._worker = None
         print(f"[Translator] {self._config.get('model')} ready")
@@ -63,8 +73,6 @@ class AITranslator:
         self._config = config
         self._provider = get_translation_provider(config)
         self._target_lang = config.get("target_lang", "tr")
-        self._window_words = config.get("context_window_words",
-                                        CONTEXT_WINDOW_WORDS)
         print(f"[Translator] Config updated: {config.get('model')}")
 
     def set_target_lang(self, lang_code):
@@ -73,21 +81,8 @@ class AITranslator:
     def clear(self):
         with self._lock:
             self._source_buffer = ""
-            self._last_sent_source = ""
-            self._last_translation = ""
-            self._deferred_source = ""
-
-    def _windowed_source(self, source):
-        """Keep only the last N words of the transcript.
-
-        The transcript grows without bound, so re-sending all of it every cycle
-        makes cost and latency climb linearly. The previous translation already
-        carries earlier context forward, so dropping old source text preserves
-        continuity."""
-        words = source.split()
-        if len(words) <= self._window_words:
-            return source
-        return " ".join(words[-self._window_words:])
+            self._committed = ""
+            self._committed_source = ""
 
     def _lang_name(self):
         names = {
@@ -97,57 +92,63 @@ class AITranslator:
         }
         return names.get(self._target_lang, self._target_lang)
 
-    def _should_translate(self, source):
-        """Decide whether `source` is worth a translation call this cycle.
+    def _context_sentences(self, n=CONTEXT_SENTENCES):
+        """Last n committed source sentences, as read-only background.
 
-        Short additions are deferred so a fast speaker doesn't trigger an API
-        call per word. But once the source stops growing, the deferred tail is
-        translated anyway — otherwise the final sentence never reaches the
-        overlay."""
-        if not source or source == self._last_sent_source:
-            self._deferred_source = ""
-            return False
-        if len(source) - len(self._last_sent_source) >= self.MIN_NEW_CHARS:
-            self._deferred_source = ""
-            return True
-        # Kısa kuyruk: konuşma sürüyorsa beklet, durduysa çevir.
-        if source == self._deferred_source:
-            self._deferred_source = ""
-            return True
-        self._deferred_source = source
-        return False
+        Bounded on purpose: given a few hundred tokens of history, models drift
+        into repeating earlier sentences instead of translating the new one."""
+        return " ".join(split_sentences(self._committed_source)[-n:])
 
     def _translate_loop(self):
         while self._running:
             time.sleep(self.TRANSLATE_INTERVAL)
             if not self._running:
                 break
-            with self._lock:
-                source = self._source_buffer
-            if not self._should_translate(source):
-                continue
-            self._last_sent_source = source
-            self._do_translate(source)
+            self._translate_pending()
 
-    def _do_translate(self, source):
+    def _translate_pending(self):
+        """Translate whatever settled source hasn't been translated yet.
+
+        Only complete sentences are translated; the trailing partial is left
+        alone because recognition may still rewrite it."""
+        with self._lock:
+            source = self._source_buffer
+        settled, _tail = stable_prefix(source)
+        if not settled:
+            return
+
+        if not settled.startswith(self._committed_source):
+            # Recognition rewrote history — what we committed no longer
+            # corresponds to what was said, so start over.
+            self._committed_source = ""
+            self._committed = ""
+
+        new = settled[len(self._committed_source):].strip()
+        if not new:
+            return
+
         try:
             provider = self._config.get("translation_provider", "openai")
             model = normalize_model(self._config.get("model", ""), provider)
-            target = self._lang_name()
-            result = self._provider.translate_document(
-                self._windowed_source(source), self._last_translation,
-                target, model,
+            piece = self._provider.translate_segment(
+                new, self._context_sentences(), self._lang_name(), model,
             )
-            if result:
-                self._last_translation = result
-                self._last_error = None
-                print(f"[Translator] Updated ({len(result.split())} words)")
-                if self._on_full_update:
-                    self._on_full_update(result)
         except ProviderError as e:
             self._report_error(str(e))
+            return
         except Exception as e:
             self._report_error(f"Unexpected: {e}")
+            return
+
+        if not piece:
+            return
+        self._last_error = None
+        self._committed = (self._committed + " " + piece).strip()
+        self._committed_source = settled
+        print(f"[Translator] +{len(piece.split())}w "
+              f"(total {len(self._committed.split())}w)")
+        if self._on_full_update:
+            self._on_full_update(self._committed)
 
     def _report_error(self, message):
         """Surface a failure on screen, once per distinct problem.
