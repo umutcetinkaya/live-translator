@@ -4,6 +4,7 @@ from providers.base import ProviderError
 from providers.openai import OpenAITranslationProvider, OpenAITTSProvider
 from providers.gemini import GeminiTranslationProvider, GeminiTTSProvider
 from providers.piper import PiperTTSProvider
+from providers.claude import ClaudeTranslationProvider
 
 
 def _make_openai_client(config):
@@ -22,12 +23,22 @@ def _make_gemini_client(config):
     return genai.Client(api_key=key)
 
 
+def _make_anthropic_client(config):
+    key = config.get("anthropic_api_key", "")
+    if not key:
+        return None
+    import anthropic
+    return anthropic.Anthropic(api_key=key)
+
+
 def get_translation_provider(config):
     name = config.get("translation_provider", "openai")
     if name == "openai":
         return OpenAITranslationProvider(client=_make_openai_client(config))
     if name == "gemini":
         return GeminiTranslationProvider(client=_make_gemini_client(config))
+    if name == "claude":
+        return ClaudeTranslationProvider(client=_make_anthropic_client(config))
     raise ProviderError(f"Unknown translation provider: {name}")
 
 
@@ -39,6 +50,8 @@ def get_tts_provider(config):
         return OpenAITTSProvider(client=_make_openai_client(config))
     if name == "gemini":
         return GeminiTTSProvider(client=_make_gemini_client(config))
+    if name == "claude":
+        raise ProviderError("Claude has no TTS API — pick Piper, OpenAI or Gemini")
     raise ProviderError(f"Unknown TTS provider: {name}")
 
 
@@ -49,6 +62,11 @@ from providers.realtime_gemini import GeminiRealtimeProvider
 def get_realtime_provider(config):
     name = config.get("translation_provider", "openai")
     model = config.get("model", "")
+    if name == "claude":
+        raise ProviderError(
+            "Claude does not support realtime audio — Anthropic has no audio "
+            "API. Use on-device STT instead."
+        )
     if name == "openai":
         return OpenAIRealtimeProvider(api_key=config.get("openai_api_key", ""),
                                       model=model,
