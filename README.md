@@ -58,13 +58,14 @@ System Audio → Speech Recognition → AI Translation → Live Overlay
 
 ## Features
 
+- **Free & on-device by default**: no account, no API key. Translation runs on a local AI model and is read aloud with your Mac's own voices. Audio and text never leave your Mac
 - **Real-time translation** of any audio on your Mac
 - **11 source languages** — English, German, French, Spanish, Italian, Japanese, Chinese, Korean, Russian, Arabic, Portuguese
 - **12 target languages** — translate into any supported language
 - **Context-aware AI** — maintains full conversation context, never loses track
 - **Live document model** — translation grows like a live document, new parts highlighted
-- **Text-to-Speech** — hear translations read aloud (Piper offline, OpenAI or Gemini voices)
-- **Multi-provider** — choose OpenAI, Google Gemini, or Anthropic Claude; just add your API key
+- **Text-to-Speech**: hear translations read aloud (free system voices or Piper offline, OpenAI or Gemini voices)
+- **Multi-provider**: stay free on-device, or plug in OpenAI, Google Gemini, or Anthropic Claude with your own API key
 - **Latest AI models** — GPT-5.5, GPT-5.4 mini/nano, Gemini 2.5 / 3.5 Flash, Claude Haiku 4.5 / Sonnet 5 / Opus 5
 - **Bounded context** — a sliding window keeps cost and latency flat on long sessions instead of growing with the transcript
 - **Floating overlay** — dark-themed panel, draggable, always on top
@@ -94,9 +95,27 @@ System Audio → Speech Recognition → AI Translation → Live Overlay
 
 1. Download → Open DMG → Drag to **Applications**
 2. Launch → Setup wizard guides you through everything
-3. Enter an API key for your provider — [OpenAI](https://platform.openai.com), [Gemini](https://aistudio.google.com/apikey), or [Anthropic](https://console.anthropic.com)
+3. Pick **Free · On-device** (recommended), or enter your own API key: [OpenAI](https://platform.openai.com), [Gemini](https://aistudio.google.com/apikey), or [Anthropic](https://console.anthropic.com)
 4. Grant **Screen & System Audio Recording** permission when prompted
-5. Play any audio → translations appear live
+5. Play any audio → translations appear live and are read aloud
+
+## Free mode
+
+Out of the box, Live Translator needs nothing but your Mac:
+
+- **Translation** runs on a small open model through [MLX](https://github.com/ml-explore/mlx), Apple's framework for Apple Silicon. It downloads once in the background on first launch; the panel shows the progress.
+- **Speech** uses the voices built into macOS, so translations are read aloud instantly, in every supported language.
+
+| Your Mac | Model | Download | Speed (M5 Pro) |
+|----------|-------|----------|----------------|
+| 16 GB RAM or more | [Qwen3 4B Instruct](https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit) (Apache-2.0) | 2.3 GB | ~0.6 s per sentence |
+| 8 GB RAM | [Qwen3 1.7B](https://huggingface.co/mlx-community/Qwen3-1.7B-4bit) (Apache-2.0) | 1.0 GB | ~0.4 s per sentence |
+
+You can switch between the two models, or delete a downloaded model, in **Settings**. The smaller model is noticeably weaker; if you have the memory, the standard one reads much more naturally.
+
+Free mode needs **Apple Silicon (M1 or later) and macOS 14 or later**. On Intel Macs the setup wizard asks for an API key instead.
+
+**Better voices:** macOS ships a basic voice per language. For a much more natural one, open **System Settings › Accessibility › Spoken Content › System Voice › Manage Voices** and download an *Enhanced* or *Premium* voice for your target language. Live Translator picks the best installed voice automatically, or choose one in Settings.
 
 > **First launch:** If macOS blocks the app, right-click → Open, or run `xattr -cr /Applications/Live\ Translator.app`
 
@@ -140,7 +159,8 @@ make run        # Launch
 
 | Provider | Pros | Cons |
 |----------|------|------|
-| **Piper** (default) | Free, offline, fast | Robotic voice |
+| **System voice** (default) | Free, offline, instant, every language; natural with Enhanced/Premium voices | Basic voices sound flat until you download a better one |
+| **Piper** | Free, offline, fast | Robotic voice; downloads the voice for your language on first use |
 | **OpenAI TTS** | Natural voices (Nova, Shimmer, Alloy, Echo, Fable, Onyx) | Costs money |
 | **Gemini TTS** | Natural voices via Gemini | Costs money |
 
@@ -256,16 +276,18 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
 | "Damaged and can't be opened" | Run `xattr -cr /Applications/Live\ Translator.app` |
 | No audio detected | Grant Screen & System Audio Recording permission, restart app |
 | STT stops working | Built-in watchdog auto-recovers within 10 seconds |
-| Translation not appearing | Check your provider's API key in Settings (OpenAI, Gemini, or Anthropic) |
+| Translation not appearing | Free mode: wait for the model download shown in the panel. Cloud providers: check the API key in Settings |
+| Model download fails | Check your internet connection and free disk space (up to 3 GB), then press Save in Settings to retry |
 | Realtime toggle greyed out | Only OpenAI supports realtime — Anthropic has no audio API |
-| TTS not working | Check TTS provider in Settings |
+| TTS not working | Check TTS provider in Settings; with System voice, make sure a voice for your target language is installed |
 | App not in dock | By design — it's a menu bar app (🌐) |
 
 ## Requirements
 
-- **macOS 13 (Ventura)** or later
+- **macOS 13 (Ventura)** or later; **free mode: Apple Silicon and macOS 14** or later
 - **Python 3.11+** (auto-installed via setup wizard if missing)
-- **An API key** from [OpenAI](https://platform.openai.com), [Google Gemini](https://aistudio.google.com/apikey), or [Anthropic](https://console.anthropic.com)
+- **Free mode:** 1 to 3 GB of disk for the translation model
+- **Optional:** an API key from [OpenAI](https://platform.openai.com), [Google Gemini](https://aistudio.google.com/apikey), or [Anthropic](https://console.anthropic.com) for cloud translation or realtime mode
 
 ---
 

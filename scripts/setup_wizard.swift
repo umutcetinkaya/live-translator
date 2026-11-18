@@ -163,7 +163,7 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
     }
 
     // ═══════════════════════════════════════
-    // MARK: Step 1 — Free mode or own key
+    // MARK: Step 1: Free mode or own key
     // ═══════════════════════════════════════
     func modelSizeText() -> String { return lowMemory() ? "about 1 GB" : "about 2.3 GB" }
 
@@ -207,7 +207,7 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
     @objc func onUseKey() { showStep1() }
 
     // ═══════════════════════════════════════
-    // MARK: Step 1b — API Key
+    // MARK: Step 1b: API Key
     // ═══════════════════════════════════════
     func showStep1() {
         clear()
