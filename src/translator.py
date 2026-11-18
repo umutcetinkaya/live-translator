@@ -108,6 +108,16 @@ class AITranslator:
                 break
             self._translate_pending()
 
+    def skip_backlog(self):
+        """Mark everything already settled as handled, without translating it.
+
+        Used when the free model finishes downloading: minutes of speech piled
+        up meanwhile, and translating it as one block would be truncated and
+        spoken far behind the picture. Translation picks up from here."""
+        with self._lock:
+            settled, _tail = stable_prefix(self._source_buffer)
+            self._committed_source = settled
+
     def on_speech_pause(self):
         """Speaker stopped — translate whatever is still waiting.
 

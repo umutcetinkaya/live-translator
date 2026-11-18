@@ -14,6 +14,7 @@ from speech_recognizer import RealtimeSpeechRecognizer
 from translator import AITranslator
 from tts import TextToSpeech
 from config import load_config, save_config, normalize_model
+import local_models
 import model_store
 from providers import get_realtime_provider
 
@@ -68,6 +69,8 @@ class TranslationPipeline:
         self._download_thread = None
         self._download_lock = threading.Lock()
         self._download_pct = 0
+        self._download_active = False
+        self._download_error = None
 
         self._realtime_mode = self._config.get("realtime_mode", False)
         self._realtime = None
@@ -90,8 +93,7 @@ class TranslationPipeline:
     # --- Free on-device model ---
 
     def _downloading(self):
-        t = self._download_thread
-        return t is not None and t.is_alive()
+        return self._download_active
 
     def ensure_local_model(self):
         """Fetch the free translation model in the background if it is missing.
@@ -101,12 +103,19 @@ class TranslationPipeline:
         save, so a failed download is retried without restarting the app."""
         if self._config.get("translation_provider") != "local":
             return
+        if not local_models.is_supported():
+            self._download_error = ("Free mode is not available on this Mac. "
+                                    "Choose a cloud provider in Settings")
+            self._overlay.update_original_on_main_thread(f"⚠️ {self._download_error}")
+            return
         repo = normalize_model(self._config.get("model", ""), "local")
         if model_store.is_ready(repo):
             return
         with self._download_lock:
-            if self._downloading():
+            if self._download_active:
                 return
+            self._download_active = True
+            self._download_error = None
             self._download_thread = threading.Thread(
                 target=self._download_local, args=(repo,), daemon=True)
             self._download_thread.start()
@@ -125,11 +134,20 @@ class TranslationPipeline:
         try:
             model_store.download(repo, progress)
         except model_store.ModelStoreError as e:
+            self._download_error = str(e)
             self._overlay.update_original_on_main_thread(f"⚠️ {e}")
             return
+        finally:
+            with self._download_lock:
+                self._download_active = False
+        # Speech that piled up during the download is skipped, not translated
+        # as one huge block that would be truncated and spoken minutes late.
+        self._translator.skip_backlog()
         self._overlay.update_original_on_main_thread(
             "✅ Translation model ready, translating now")
-        self._translator.on_speech_pause()
+        # The model may have been changed in Settings while this one downloaded.
+        if normalize_model(self._config.get("model", ""), "local") != repo:
+            self.ensure_local_model()
 
     def start(self):
         print("[Pipeline] Starting...")
@@ -275,8 +293,11 @@ class TranslationPipeline:
 
     def _on_translate_error(self, message):
         """Put translation failures on screen instead of only in the terminal."""
-        if self._downloading() and message.startswith("Downloading the free"):
-            return  # the progress line already says so, with a percentage
+        if message.startswith("Downloading the free"):
+            if self._download_error:
+                message = self._download_error  # nothing is downloading; say why
+            elif self._downloading():
+                return  # the progress line already says so, with a percentage
         self._overlay.update_original_on_main_thread(f"⚠️ {message}")
 
     def _on_tts_error(self, message):
@@ -301,6 +322,8 @@ class TranslationPipeline:
             # Recognised text refreshes this line constantly; keep the
             # progress visible at its end (the overlay shows the tail).
             text = f"{text} · ⬇️ model {self._download_pct}%"
+        elif self._download_error and self._config.get("translation_provider") == "local":
+            text = f"{text} · ⚠️ {self._download_error}"
         self._overlay.update_original_on_main_thread(text)
         self._translator.update_source(self._full_source())
 

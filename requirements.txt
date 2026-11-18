@@ -11,7 +11,10 @@ google-genai>=1.0
 anthropic>=0.120,<1.0
 websocket-client>=1.0
 piper-tts>=1.0.0,<3.0
-mlx-lm>=0.32,<0.40
+huggingface_hub>=0.30
+# Free on-device translation. MLX only publishes Apple Silicon wheels for
+# macOS 14+ (Darwin 23+); elsewhere the app offers cloud providers only.
+mlx-lm>=0.32,<0.40; platform_system == "Darwin" and platform_machine == "arm64" and platform_release >= "23"
 
 # Dev/test
 pytest>=8.0

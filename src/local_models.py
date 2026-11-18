@@ -5,6 +5,7 @@ for 8 GB machines, where the standard model plus speech recognition plus the
 video being watched would push the system into swap.
 """
 
+import importlib.util
 import os
 import platform
 
@@ -44,7 +45,12 @@ def _macos_version():
 
 
 def is_supported(machine=None, macos=None):
-    """True when MLX can run here: Apple Silicon on MIN_MACOS or later."""
+    """True when the free mode can run here: Apple Silicon on MIN_MACOS or
+    later, with mlx-lm installed. The install check catches venvs created
+    before the free mode existed and x86_64 Pythons running under Rosetta,
+    where pip skips mlx-lm."""
     machine = machine if machine is not None else platform.machine()
     macos = tuple(macos) if macos is not None else _macos_version()
-    return machine == "arm64" and macos >= MIN_MACOS
+    if machine != "arm64" or macos < MIN_MACOS:
+        return False
+    return importlib.util.find_spec("mlx_lm") is not None

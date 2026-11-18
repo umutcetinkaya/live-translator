@@ -113,6 +113,17 @@ if [ "${HAS_SETUP}" = false ] || [ "${HAS_VENV}" = false ]; then
     rm -f "${MARKER}" 2>/dev/null
 fi
 
+# >>> venv refresh
+# An update can bring new requirements (e.g. mlx-lm for the free mode), but
+# an existing venv skips the wizard; reinstall when requirements.txt changed.
+REQ_HASH="$(shasum "${DIR}/requirements.txt" 2>/dev/null | cut -d' ' -f1)"
+STAMP="${SUPPORT}/requirements.sha1"
+if [ "${HAS_VENV}" = true ] && [ -n "${REQ_HASH}" ] && [ "$(cat "${STAMP}" 2>/dev/null)" != "${REQ_HASH}" ]; then
+    "${VENV}/bin/python" -m pip install -q -r "${DIR}/requirements.txt" >>"${LOG}" 2>&1 \
+        && echo "${REQ_HASH}" > "${STAMP}"
+fi
+# <<< venv refresh
+
 # Launch
 cd "${DIR}"
 exec "${VENV}/bin/python" "${DIR}/main.py" 2>>"${LOG}"

@@ -201,3 +201,21 @@ def test_pause_does_not_retranslate_committed_text(monkeypatch):
     prov.translate_segment.reset_mock()
     t.on_speech_pause()             # yeni bir şey yok
     assert not prov.translate_segment.called
+
+
+def test_skip_backlog_commits_without_translating():
+    # Model inerken biriken konuşma atlanır; sonra sadece yeni konuşma çevrilir
+    from unittest.mock import MagicMock
+    import translator as tmod
+    prov = MagicMock()
+    prov.translate_segment.return_value = "yeni"
+    t = tmod.AITranslator(config={"translation_provider": "openai", "model": "gpt-5.4-mini",
+                                  "target_lang": "tr"})
+    t._provider = prov
+    t.update_source("This was said during the download. And this too.")
+    t.skip_backlog()
+    t._translate_pending(flush=True)
+    prov.translate_segment.assert_not_called()
+    t.update_source("This was said during the download. And this too. Now something new.")
+    t._translate_pending()
+    assert prov.translate_segment.call_args.args[0] == "Now something new."

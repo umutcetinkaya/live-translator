@@ -116,6 +116,8 @@ class GatedDownload:
 
 def _local_pipeline(monkeypatch, download, ready=False, cfg=None):
     _patch_components(monkeypatch)
+    import local_models
+    monkeypatch.setattr(local_models, "is_supported", lambda *a, **k: True)
     monkeypatch.setattr(model_store, "is_ready", lambda repo: ready)
     monkeypatch.setattr(model_store, "download", download)
     overlay = MagicMock()
@@ -191,7 +193,9 @@ def test_translation_resumes_after_download(monkeypatch):
     p.ensure_local_model()
     dl.gate.set()
     p._download_thread.join(5)
-    p._translator.on_speech_pause.assert_called()
+    # Biriken konuşma tek dev parça olarak çevrilmez (kesilir, dakikalarca geç okunur); atlanır
+    p._translator.skip_backlog.assert_called_once()
+    p._translator.on_speech_pause.assert_not_called()
     assert any("ready" in m.lower() for m in _messages(overlay))
 
 
@@ -220,3 +224,47 @@ def test_progress_survives_incoming_speech(monkeypatch):
     p._download_thread.join(5)
     p._on_partial("next sentence")
     assert _messages(overlay)[-1] == "next sentence"
+
+
+def test_download_error_stays_visible(monkeypatch):
+    # Hata bir kez yazılıp konuşmayla silinmemeli; hem kısmi metinde hem çeviri hatasında görünmeli
+    dl = GatedDownload(fail=model_store.ModelStoreError("Not enough disk space to download the translation model"))
+    p, overlay = _local_pipeline(monkeypatch, dl)
+    p.ensure_local_model()
+    dl.gate.set()
+    p._download_thread.join(5)
+    p._on_partial("hello everyone")
+    assert "disk space" in _messages(overlay)[-1] and "hello everyone" in _messages(overlay)[-1]
+    p._on_translate_error("Downloading the free translation model…")
+    assert _messages(overlay)[-1].startswith("⚠️") and "disk space" in _messages(overlay)[-1]
+
+
+def test_model_switch_during_download_fetches_new_model(monkeypatch):
+    ready = set()
+    monkeypatch.setattr(model_store, "is_ready", lambda repo: repo in ready)
+    dl = GatedDownload()
+    p, _ = _local_pipeline(monkeypatch, dl, ready=False)
+    monkeypatch.setattr(model_store, "is_ready", lambda repo: repo in ready)
+    def finish(repo, on_progress=None, hub=None):
+        dl.calls.append(repo)
+        dl.gate.wait(5)
+        ready.add(repo)
+        return "/m"
+    monkeypatch.setattr(model_store, "download", finish)
+    p.ensure_local_model()
+    first = p._download_thread
+    p.update_config(dict(LOCAL_CFG, model=LOCAL_MODELS["small"]))  # indirme sürerken model değişti
+    dl.gate.set()
+    first.join(5)
+    p._download_thread.join(5)
+    assert dl.calls == [LOCAL_MODELS["standard"], LOCAL_MODELS["small"]]
+
+
+def test_unsupported_mac_never_downloads(monkeypatch):
+    dl = GatedDownload()
+    p, overlay = _local_pipeline(monkeypatch, dl)
+    import local_models
+    monkeypatch.setattr(local_models, "is_supported", lambda *a, **k: False)
+    p.ensure_local_model()
+    assert dl.calls == []
+    assert any("not available on this Mac" in m for m in _messages(overlay))

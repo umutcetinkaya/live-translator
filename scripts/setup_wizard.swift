@@ -18,8 +18,30 @@ func isAppleSilicon() -> Bool {
     return sysctlbyname("hw.optional.arm64", &value, &size, nil, 0) == 0 && value == 1
 }
 
+let PYTHON_PATHS = ["/opt/homebrew/bin/python3", "/usr/local/bin/python3", "/usr/bin/python3"]
+
+/// The Python the installer will use must itself be arm64: an Intel Python
+/// under Rosetta reports x86_64 and pip skips mlx-lm for it. No Python yet
+/// means Homebrew installs a native one.
+func pythonIsArm64() -> Bool {
+    guard let python = PYTHON_PATHS.first(where: { FileManager.default.fileExists(atPath: $0) }) else {
+        return true
+    }
+    let p = Process()
+    p.launchPath = python
+    p.arguments = ["-c", "import platform; print(platform.machine())"]
+    let out = Pipe()
+    p.standardOutput = out
+    p.standardError = FileHandle.nullDevice
+    do { try p.run() } catch { return false }
+    p.waitUntilExit()
+    let text = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+    return text.trimmingCharacters(in: .whitespacesAndNewlines) == "arm64"
+}
+
 func freeModeSupported() -> Bool {
     return isAppleSilicon() && ProcessInfo.processInfo.isOperatingSystemAtLeast(MIN_MACOS)
+        && pythonIsArm64()
 }
 
 func lowMemory() -> Bool {
@@ -380,8 +402,7 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
         let log = NSHomeDirectory() + "/Library/Logs/LiveTranslator.log"
 
         // Find python3
-        let pythonPaths = ["/opt/homebrew/bin/python3", "/usr/local/bin/python3", "/usr/bin/python3"]
-        var python = pythonPaths.first { FileManager.default.fileExists(atPath: $0) }
+        var python = PYTHON_PATHS.first { FileManager.default.fileExists(atPath: $0) }
 
         // No python found — install via Homebrew
         if python == nil {
