@@ -169,6 +169,7 @@ class TextToSpeech:
         self._voice = config.get("tts_voice", self._voice)
         self._speed = config.get("tts_speed", self._speed)
         self._provider = get_tts_provider(config)
+        self._provider_name = config.get("tts_provider", self._provider_name)
 
     def speak(self, text):
         """Queue a translation to be spoken, oldest first.
@@ -267,10 +268,16 @@ class TextToSpeech:
             except Exception:
                 pass
 
+    def _voice_for_provider(self):
+        """Each provider has its own voice names; never cross them."""
+        if self._provider_name == "system":
+            return self._config.get("tts_voice_system", "")
+        return self._voice
+
     def _synthesize_and_play(self, text):
         try:
-            path = self._provider.synthesize(text, self._lang, self._voice,
-                                             self._speed)
+            path = self._provider.synthesize(text, self._lang,
+                                             self._voice_for_provider(), self._speed)
         except ProviderError as e:
             self._report_error(str(e))
             return

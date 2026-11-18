@@ -92,3 +92,95 @@ def test_claude_realtime_hint_explains_why(build_html):
 def test_save_sends_anthropic_key(build_html):
     """saveSettings anahtarı Python tarafına geçirmeli."""
     assert "anthropicKey=" in build_html(_config())
+
+
+# --- Ücretsiz mod: yerel çeviri ve sistem sesi seçenekleri ---
+
+from local_models import LOCAL_MODELS
+
+STD, SMALL = LOCAL_MODELS["standard"], LOCAL_MODELS["small"]
+
+
+def _env(**over):
+    env = {
+        "local_supported": True,
+        "local_models": [
+            {"id": STD, "label": "Standard (better) · 2.3 GB", "status": "Ready · 2.3 GB", "warn": ""},
+            {"id": SMALL, "label": "Small (faster) · 1.0 GB", "status": "Not downloaded", "warn": ""},
+        ],
+        "system_voices": [
+            {"id": "tr.enhanced", "name": "Yelda", "quality": 2},
+            {"id": "tr.compact", "name": "Yelda", "quality": 1},
+        ],
+    }
+    env.update(over)
+    return env
+
+
+def test_renders_without_env(build_html):
+    # Eski çağrı biçimi (env yok) çökmemeli ve yerel seçeneği göstermemeli
+    html = build_html(_config())
+    assert 'value="local"' not in html
+
+
+def test_local_option_first_when_supported(build_html):
+    html = build_html(_config(), _env())
+    sel = html.index('id="providerSelect"')
+    assert html.index('value="local"', sel) < html.index('value="openai"', sel)
+    assert "On-device (free)" in html
+
+
+def test_local_option_hidden_when_unsupported(build_html):
+    html = build_html(_config(), _env(local_supported=False))
+    assert 'value="local"' not in html
+
+
+def test_local_selected_when_active(build_html):
+    html = build_html(_config(translation_provider="local", model=STD), _env())
+    assert 'value="local" selected' in html
+
+
+@pytest.mark.parametrize("tts", ["system", "piper", "openai", "gemini"])
+def test_renders_for_every_tts_provider(build_html, tts):
+    assert len(build_html(_config(tts_provider=tts), _env())) > 1000
+
+
+def test_local_hides_key_rows_and_shows_model_row(build_html):
+    html = build_html(_config(), _env())
+    assert "localModelRow" in html
+    assert "provider !== 'local'" in html.replace('"', "'") or \
+        "provider === 'local'" in html.replace('"', "'")
+
+
+def test_local_model_info_embedded(build_html):
+    html = build_html(_config(translation_provider="local", model=STD), _env())
+    assert "Standard (better) · 2.3 GB" in html
+    assert "Not downloaded" in html
+
+
+def test_system_voice_option_in_both_lists(build_html):
+    html = build_html(_config(), _env())
+    assert html.count('value="system"') == 2
+    assert "System voice (free)" in html
+
+
+def test_system_voices_rendered_for_target_lang(build_html):
+    html = build_html(_config(tts_provider="system", tts_voice_system="tr.compact"), _env())
+    assert 'value="tr.compact" selected' in html
+    assert "Yelda (Enhanced)" in html
+
+
+def test_voice_download_hint_only_without_good_voice(build_html):
+    hint = "Spoken Content"
+    good = build_html(_config(tts_provider="system"), _env())
+    only_basic = build_html(_config(tts_provider="system"),
+                            _env(system_voices=[{"id": "tr.compact", "name": "Yelda", "quality": 1}]))
+    assert hint not in good and hint in only_basic
+
+
+def test_save_settings_passes_system_voice(build_html):
+    assert "&systemVoice=" in build_html(_config(), _env())
+
+
+def test_delete_model_action_in_page(build_html):
+    assert "app://deleteLocalModel?model=" in build_html(_config(), _env())

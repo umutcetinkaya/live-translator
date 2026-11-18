@@ -42,7 +42,9 @@ def _current_system_volume():
         return 70
 
 
-def _build_html(config):
+def _build_html(config, env=None):
+    quality_names = {3: "Premium", 2: "Enhanced", 1: "Default"}
+    env = env or {"local_supported": False, "local_models": [], "system_voices": []}
     source_options = ""
     for name, locale in SOURCE_LANGUAGES.items():
         sel = "selected" if locale == config.get("source_locale", "en-US") else ""
@@ -59,6 +61,28 @@ def _build_html(config):
     provider = config.get("translation_provider", "openai")
     tts_provider = config.get("tts_provider", "piper")
     tts_speed = config.get("tts_speed", 1.0)
+
+    local_prov_option = ""
+    if env.get("local_supported"):
+        sel = "selected" if provider == "local" else ""
+        local_prov_option = f'<option value="local" {sel}>On-device (free)</option>'
+    model_labels = {m["id"]: m["label"] for m in env.get("local_models", [])}
+    local_info = {m["id"]: {"status": m["status"], "warn": m["warn"]}
+                  for m in env.get("local_models", [])}
+
+    voices = env.get("system_voices", [])
+    chosen_voice = config.get("tts_voice_system", "")
+    system_voice_options = ""
+    for v in voices:
+        sel = "selected" if v["id"] == chosen_voice else ""
+        label = f'{v["name"]} ({quality_names.get(v["quality"], "Default")})'
+        system_voice_options += f'<option value="{v["id"]}" {sel}>{label}</option>'
+    if voices and max(v["quality"] for v in voices) >= 2:
+        voice_hint = ""
+    else:
+        voice_hint = ("For a more natural voice: System Settings › Accessibility › "
+                      "Spoken Content › System Voice › Manage Voices, then pick an "
+                      "Enhanced or Premium voice.")
 
     return """<!DOCTYPE html>
 <html>
@@ -358,6 +382,7 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
 <div id="audiobar">
     <button id="abTts" class="ab-btn" onclick="toggleTTS()">🔊 Voice</button>
     <select id="abVoice" onchange="abVoiceChange()" title="Voice provider">
+        <option value="system" %(ab_system)s>System</option>
         <option value="piper" %(ab_piper)s>Piper</option>
         <option value="openai" %(ab_openai)s>OpenAI</option>
         <option value="gemini" %(ab_gemini)s>Gemini</option>
@@ -384,6 +409,7 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
             <div class="section-title">Translation</div>
             <label>Provider</label>
             <select id="providerSelect" onchange="onProviderChange()">
+                %(local_prov_option)s
                 <option value="openai" %(openai_prov_sel)s>OpenAI</option>
                 <option value="gemini" %(gemini_prov_sel)s>Google Gemini</option>
                 <option value="claude" %(claude_prov_sel)s>Anthropic Claude</option>
@@ -401,17 +427,32 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
                 <input type="password" id="anthropicKeyInput" value="%(anthropic_key)s" placeholder="sk-ant-…">
             </div>
             <label>Model</label>
-            <select id="modelSelect"></select>
+            <select id="modelSelect" onchange="updateLocalInfo()"></select>
+            <div id="localModelRow">
+                <div id="localModelStatus" style="font-size:11px;margin-top:6px;color:rgba(255,255,255,0.6);"></div>
+                <div id="localModelWarn" style="font-size:11px;margin-top:4px;color:#e0a000;"></div>
+                <div style="font-size:11px;margin-top:4px;color:rgba(255,255,255,0.45);">Free, runs on this Mac. Audio and text never leave it.</div>
+                <button id="deleteModelBtn" class="btn-cancel" style="margin-top:8px;padding:6px 12px;font-size:11px;" onclick="deleteLocalModel()">Delete model</button>
+            </div>
         </div>
 
         <div class="section">
             <div class="section-title">Text-to-Speech</div>
             <label>Voice provider</label>
             <select id="ttsProvider" onchange="onTtsProviderChange()">
+                <option value="system" %(system_tts_sel)s>System voice (free)</option>
                 <option value="piper" %(piper_sel)s>Piper — offline, free</option>
                 <option value="openai" %(openai_tts_sel)s>OpenAI — natural</option>
                 <option value="gemini" %(gemini_tts_sel)s>Gemini — natural</option>
             </select>
+            <div id="systemVoiceRow">
+                <label>System voice</label>
+                <select id="systemVoice">
+                    <option value="">Best available</option>
+                    %(system_voice_options)s
+                </select>
+                <div style="font-size:11px;margin-top:6px;color:rgba(255,255,255,0.45);">%(voice_hint)s</div>
+            </div>
             <div id="openaiVoiceRow">
                 <label>OpenAI voice</label>
                 <select id="ttsVoice">
@@ -459,13 +500,27 @@ let firstMsg = true;
 
 const MODELS = %(models_json)s;
 const CURRENT_MODEL = %(current_model_json)s;
+const MODEL_LABELS = %(model_labels_json)s;
+const LOCAL_INFO = %(local_info_json)s;
+function updateLocalInfo() {
+    const info = LOCAL_INFO[document.getElementById('modelSelect').value] || {status: '', warn: ''};
+    document.getElementById('localModelStatus').textContent = info.status;
+    document.getElementById('localModelWarn').textContent = info.warn;
+    document.getElementById('deleteModelBtn').classList.toggle('hidden', info.status.indexOf('Ready') !== 0);
+}
+function deleteLocalModel() {
+    const m = document.getElementById('modelSelect').value;
+    location.href = 'app://deleteLocalModel?model=' + encodeURIComponent(m);
+    if (LOCAL_INFO[m]) { LOCAL_INFO[m].status = 'Not downloaded'; }
+    updateLocalInfo();
+}
 function populateModels() {
     const provider = document.getElementById('providerSelect').value;
     const sel = document.getElementById('modelSelect');
     sel.innerHTML = '';
     (MODELS[provider] || []).forEach(function(m) {
         const o = document.createElement('option');
-        o.value = m; o.textContent = m;
+        o.value = m; o.textContent = MODEL_LABELS[m] || m;
         if (m === CURRENT_MODEL) o.selected = true;
         sel.appendChild(o);
     });
@@ -476,6 +531,7 @@ function onProviderChange() {
     document.getElementById('openaiKeyRow').classList.toggle('hidden', provider !== 'openai');
     document.getElementById('geminiKeyRow').classList.toggle('hidden', provider !== 'gemini');
     document.getElementById('anthropicKeyRow').classList.toggle('hidden', provider !== 'claude');
+    document.getElementById('localModelRow').classList.toggle('hidden', provider !== 'local');
     // Realtime is only available with OpenAI
     const rt = document.getElementById('realtimeToggle');
     const hint = document.getElementById('realtimeHint');
@@ -491,6 +547,7 @@ function onProviderChange() {
         document.getElementById('realtimeWarn').style.display = 'none';
     }
     populateModels();
+    updateLocalInfo();
 }
 
 function onRealtimeChange() {
@@ -502,6 +559,7 @@ function onTtsProviderChange() {
     // OpenAI voice selection only matters for OpenAI TTS
     const tts = document.getElementById('ttsProvider').value;
     document.getElementById('openaiVoiceRow').classList.toggle('hidden', tts !== 'openai');
+    document.getElementById('systemVoiceRow').classList.toggle('hidden', tts !== 'system');
 }
 
 function addMessage(text) {
@@ -646,6 +704,7 @@ function saveSettings() {
         + '&ttsProvider=' + encodeURIComponent(ttsProvider)
         + '&ttsSpeed=' + encodeURIComponent(ttsSpeed)
         + '&ttsVoice=' + encodeURIComponent(ttsVoice)
+        + '&systemVoice=' + encodeURIComponent(document.getElementById('systemVoice').value)
         + '&realtime=' + (document.getElementById('realtimeToggle').checked ? '1' : '0');
     closeSettings();
 }
@@ -677,6 +736,7 @@ initSettings();
         "openai_prov_sel": "selected" if provider == "openai" else "",
         "gemini_prov_sel": "selected" if provider == "gemini" else "",
         "claude_prov_sel": "selected" if provider == "claude" else "",
+        "ab_system": "selected" if tts_provider == "system" else "",
         "ab_piper": "selected" if tts_provider == "piper" else "",
         "ab_openai": "selected" if tts_provider == "openai" else "",
         "ab_gemini": "selected" if tts_provider == "gemini" else "",
@@ -685,6 +745,7 @@ initSettings();
         "openai_key": openai_key,
         "gemini_key": gemini_key,
         "anthropic_key": anthropic_key,
+        "system_tts_sel": "selected" if tts_provider == "system" else "",
         "piper_sel": "selected" if tts_provider == "piper" else "",
         "openai_tts_sel": "selected" if tts_provider == "openai" else "",
         "gemini_tts_sel": "selected" if tts_provider == "gemini" else "",
@@ -696,6 +757,11 @@ initSettings();
         "voice_fable": "selected" if config.get("tts_voice") == "fable" else "",
         "voice_onyx": "selected" if config.get("tts_voice") == "onyx" else "",
         "models_json": json.dumps(MODELS),
+        "model_labels_json": json.dumps(model_labels, ensure_ascii=False),
+        "local_info_json": json.dumps(local_info, ensure_ascii=False),
+        "local_prov_option": local_prov_option,
+        "system_voice_options": system_voice_options,
+        "voice_hint": voice_hint,
         "current_model_json": json.dumps(config.get("model", "")),
         "realtime_checked": "checked" if config.get("realtime_mode") else "",
         "realtime_warn_display": "block" if config.get("realtime_mode") else "none",
@@ -739,7 +805,10 @@ class _NavDelegate(NSObject):
                 params.get("ttsSpeed", "1.0"),
                 params.get("ttsVoice", "nova"),
                 params.get("realtime", "0"),
+                params.get("systemVoice", ""),
             )
+        elif action == "deleteLocalModel":
+            o._delete_local_model(params.get("model", ""))
         elif action == "setTtsProvider" and o._on_audio_control:
             o._on_audio_control("provider", params.get("name", "piper"))
         elif action == "setSpeechLevel" and o._on_audio_control:
@@ -839,7 +908,8 @@ class TranslationOverlay:
         self._window.setContentView_(self._webview)
         self._window.setMovableByWindowBackground_(False)
 
-        html = _build_html(self._config)
+        import settings_env
+        html = _build_html(self._config, settings_env.build(self._config))
         self._webview.loadHTMLString_baseURL_(html, None)
 
     def _js(self, func, arg):
@@ -849,7 +919,7 @@ class TranslationOverlay:
 
     def _save_settings(self, provider, openai_key, gemini_key, anthropic_key,
                        model, tts_provider="piper", tts_speed="1.0",
-                       tts_voice="nova", realtime="0"):
+                       tts_voice="nova", realtime="0", system_voice=""):
         self._config["translation_provider"] = provider
         self._config["openai_api_key"] = openai_key
         self._config["gemini_api_key"] = gemini_key
@@ -858,6 +928,7 @@ class TranslationOverlay:
         self._config["tts_provider"] = tts_provider
         self._config["tts_speed"] = float(tts_speed)
         self._config["tts_voice"] = tts_voice
+        self._config["tts_voice_system"] = system_voice
         # Realtime is OpenAI-only: Anthropic has no audio API at all, and
         # Gemini's live-translate path is preview-tier.
         self._config["realtime_mode"] = (realtime == "1") and (provider == "openai")
@@ -865,6 +936,13 @@ class TranslationOverlay:
         print(f"[Overlay] Settings saved (provider: {provider}, model: {model})")
         if self._on_settings_change:
             self._on_settings_change(self._config)
+
+    def _delete_local_model(self, repo):
+        import model_store
+        from local_models import LOCAL_MODELS
+        if repo in LOCAL_MODELS.values():
+            model_store.delete(repo)
+            print(f"[Overlay] Deleted local model {repo}")
 
     def show(self):
         if self._window:

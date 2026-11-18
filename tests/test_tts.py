@@ -45,3 +45,17 @@ def test_starts_disabled_by_default_for_old_configs(monkeypatch):
     t = TextToSpeech(config={"tts_provider": "openai"})
     assert t.enabled is False
     assert t._worker is None
+
+
+def test_system_provider_uses_its_own_voice_setting(monkeypatch, tmp_path):
+    # OpenAI ses adı ("nova") sistem sesine gönderilmemeli; sistem sesi kendi alanından gelir
+    fake = MagicMock()
+    wav = str(tmp_path / "o.wav"); open(wav, "wb").close()
+    fake.synthesize.return_value = wav
+    monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: fake)
+    t = TextToSpeech(config={"tts_provider": "system", "target_lang": "tr",
+                             "tts_voice": "nova", "tts_voice_system": "tr.enhanced",
+                             "tts_speed": 1.0})
+    monkeypatch.setattr(t, "_play_file", lambda p: None)
+    t._synthesize_and_play("Merhaba")
+    fake.synthesize.assert_called_once_with("Merhaba", "tr", "tr.enhanced", 1.0)
