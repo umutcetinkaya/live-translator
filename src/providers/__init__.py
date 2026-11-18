@@ -39,6 +39,9 @@ def get_translation_provider(config):
         return GeminiTranslationProvider(client=_make_gemini_client(config))
     if name == "claude":
         return ClaudeTranslationProvider(client=_make_anthropic_client(config))
+    if name == "local":
+        from providers.local import LocalTranslationProvider
+        return LocalTranslationProvider()
     raise ProviderError(f"Unknown translation provider: {name}")
 
 
@@ -62,6 +65,11 @@ from providers.realtime_gemini import GeminiRealtimeProvider
 def get_realtime_provider(config):
     name = config.get("translation_provider", "openai")
     model = config.get("model", "")
+    if name == "local":
+        raise ProviderError(
+            "Realtime needs a cloud provider. The free on-device model works "
+            "on recognised text, not on raw audio."
+        )
     if name == "claude":
         raise ProviderError(
             "Claude does not support realtime audio — Anthropic has no audio "

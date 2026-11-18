@@ -3,6 +3,9 @@
 import json
 import os
 
+import local_models
+from local_models import LOCAL_MODELS
+
 CONFIG_PATH = os.path.expanduser("~/.live-translator.json")
 
 DEFAULTS = {
@@ -21,6 +24,7 @@ DEFAULTS = {
 }
 
 MODELS = {
+    "local": [LOCAL_MODELS["standard"], LOCAL_MODELS["small"]],
     "openai": ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5.5"],
     "gemini": ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash"],
     "claude": ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
@@ -32,6 +36,9 @@ def normalize_model(model, provider):
     valid = MODELS.get(provider, [])
     if model in valid:
         return model
+    if provider == "local":
+        # The default local model depends on this Mac's memory.
+        return local_models.default_model()
     return valid[0] if valid else model
 
 SOURCE_LANGUAGES = {

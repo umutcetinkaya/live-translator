@@ -31,3 +31,15 @@ def test_normalize_model_claude_fallback():
     assert normalize_model("gpt-5.5", "claude") == "claude-haiku-4-5"
     assert normalize_model("claude-sonnet-5", "claude") == "claude-sonnet-5"
 
+
+def test_local_models_listed():
+    from local_models import LOCAL_MODELS
+    assert MODELS["local"] == [LOCAL_MODELS["standard"], LOCAL_MODELS["small"]]
+
+def test_normalize_model_local_falls_back_to_ram_default(monkeypatch):
+    # Geçersiz model, bu Mac'in RAM'ine uygun modele düşmeli (8 GB'da küçük model)
+    import config, local_models
+    monkeypatch.setattr(local_models, "total_ram_bytes", lambda: 8 * 1024 ** 3)
+    assert normalize_model("gpt-5.5", "local") == local_models.LOCAL_MODELS["small"]
+    assert normalize_model(local_models.LOCAL_MODELS["standard"], "local") == \
+        local_models.LOCAL_MODELS["standard"]

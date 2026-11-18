@@ -25,6 +25,8 @@ CONTEXT_SENTENCES = 2
 def _friendly(message):
     """Turn a provider error into something the user can act on."""
     low = message.lower()
+    if "local model not ready" in low:
+        return "Downloading the free translation model…"
     if "no api key" in low or "authentication" in low or "401" in low:
         return "Translation API key missing or invalid — check Settings"
     if "rate_limit" in low or "429" in low:

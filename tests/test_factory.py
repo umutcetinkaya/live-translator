@@ -17,6 +17,16 @@ def test_gemini_translation(_):
     cfg = {"translation_provider": "gemini", "gemini_api_key": "k"}
     assert isinstance(get_translation_provider(cfg), GeminiTranslationProvider)
 
+def test_local_translation():
+    from providers.local import LocalTranslationProvider
+    cfg = {"translation_provider": "local"}
+    assert isinstance(get_translation_provider(cfg), LocalTranslationProvider)
+
+def test_realtime_rejects_local():
+    from providers import get_realtime_provider
+    with pytest.raises(ProviderError, match="cloud"):
+        get_realtime_provider({"translation_provider": "local"})
+
 def test_unknown_translation_provider_raises():
     with pytest.raises(ProviderError):
         get_translation_provider({"translation_provider": "nope"})
