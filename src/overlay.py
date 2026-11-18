@@ -771,6 +771,9 @@ class _Updater(NSObject):
     def replaceAll_(self, text):
         if self._overlay:
             self._overlay._js("replaceAll", text)
+    def setTTSState_(self, flag):
+        if self._overlay:
+            self._overlay.set_tts_state(bool(flag))
 
 
 class TranslationOverlay:
@@ -913,6 +916,11 @@ class TranslationOverlay:
     def set_tts_state(self, on):
         js = f"setTTSState({'true' if on else 'false'})"
         self._webview.evaluateJavaScript_completionHandler_(js, None)
+
+    def set_tts_state_on_main_thread(self, on):
+        self._updater.performSelectorOnMainThread_withObject_waitUntilDone_(
+            "setTTSState:", bool(on), False
+        )
 
     def replace_all_text(self, text):
         """Replace all chat content with updated translation."""

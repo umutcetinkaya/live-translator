@@ -13,7 +13,7 @@ from audio_capture import SystemAudioCapture
 from speech_recognizer import RealtimeSpeechRecognizer
 from translator import AITranslator
 from tts import TextToSpeech
-from config import load_config
+from config import load_config, save_config
 from providers import get_realtime_provider
 
 
@@ -175,8 +175,16 @@ class TranslationPipeline:
         self._last_tts_text = ""
         self._translator.clear()
 
+    @property
+    def tts_enabled(self):
+        return self._tts.enabled
+
     def toggle_tts(self):
-        return self._tts.toggle()
+        """Toggle speech and remember the choice for the next launch."""
+        on = self._tts.toggle()
+        self._config["tts_enabled"] = bool(on)
+        save_config(self._config)
+        return on
 
     def audio_control(self, what, value):
         """Apply a change from the audio bar, live.

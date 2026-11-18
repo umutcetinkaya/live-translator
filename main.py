@@ -59,6 +59,8 @@ class AppDelegate(NSObject):
                 self._overlay, config=self._config
             )
             self._pipeline.start()
+            # Speech may start on (new installs); make the button agree.
+            self._overlay.set_tts_state_on_main_thread(self._pipeline.tts_enabled)
         except Exception as e:
             print(f"[Main] Pipeline error: {e}")
 

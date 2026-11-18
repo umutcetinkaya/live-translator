@@ -25,3 +25,23 @@ def test_provider_error_does_not_crash(monkeypatch):
                              "tts_voice": "nova", "tts_speed": 1.0})
     monkeypatch.setattr(t, "_play_file", lambda p: None)
     t._synthesize_and_play("Merhaba")  # sızdırmamalı
+
+
+def _quiet(monkeypatch):
+    monkeypatch.setattr(tts_mod, "get_tts_provider", lambda cfg: MagicMock())
+
+
+def test_starts_enabled_when_config_says_so(monkeypatch):
+    # Yeni kurulumda çeviri hemen sesli okunmalı: worker da çalışıyor olmalı
+    _quiet(monkeypatch)
+    t = TextToSpeech(config={"tts_provider": "system", "tts_enabled": True})
+    assert t.enabled is True
+    assert t._worker is not None and t._worker.is_alive()
+    t.stop()
+
+
+def test_starts_disabled_by_default_for_old_configs(monkeypatch):
+    _quiet(monkeypatch)
+    t = TextToSpeech(config={"tts_provider": "openai"})
+    assert t.enabled is False
+    assert t._worker is None

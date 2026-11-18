@@ -83,3 +83,20 @@ def test_disabled_tts_never_speaks(monkeypatch):
     p._tts.enabled = False
     p._on_translation("Merhaba dünya.")
     assert _spoken(p) == []
+
+
+def test_toggle_persists_state(monkeypatch):
+    # Açma/kapama tercihi config'e yazılmalı ki bir sonraki açılışta hatırlansın
+    p = _make_pipeline(monkeypatch)
+    saved = []
+    monkeypatch.setattr(pipeline_mod, "save_config", lambda c: saved.append(dict(c)))
+    p._tts.toggle.return_value = False
+    assert p.toggle_tts() is False
+    assert p._config["tts_enabled"] is False
+    assert saved and saved[-1]["tts_enabled"] is False
+
+
+def test_tts_enabled_property(monkeypatch):
+    p = _make_pipeline(monkeypatch)
+    p._tts.enabled = True
+    assert p.tts_enabled is True

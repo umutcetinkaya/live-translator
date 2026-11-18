@@ -95,6 +95,8 @@ class TextToSpeech:
         self._speech_level = float(self._config.get("speech_level", PEAK_TARGET))
         self._provider_name = self._config.get("tts_provider", "piper")
         self._provider = get_tts_provider(self._config)
+        if self._config.get("tts_enabled"):
+            self.set_enabled(True)
 
     # --- Live controls, driven from the panel above the transcript ---
 
