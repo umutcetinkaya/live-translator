@@ -47,6 +47,9 @@ def get_translation_provider(config):
 
 def get_tts_provider(config):
     name = config.get("tts_provider", "piper")
+    if name == "system":
+        from providers.system_voice import SystemVoiceTTSProvider
+        return SystemVoiceTTSProvider()
     if name == "piper":
         return PiperTTSProvider()
     if name == "openai":

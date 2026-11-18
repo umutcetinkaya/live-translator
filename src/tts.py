@@ -71,6 +71,9 @@ def _friendly(message):
         return "TTS API key is not valid — check it in Settings"
     if "no api key" in low:
         return "No TTS API key — add one in Settings"
+    if "system voice: no voice for" in low:
+        return ("No system voice for this language. Pick Piper or a cloud voice, "
+                "or add one in System Settings › Accessibility › Spoken Content")
     if "no voice for" in low:
         return "No offline voice for this language — pick OpenAI or Gemini TTS"
     return message

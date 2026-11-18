@@ -44,6 +44,10 @@ def test_gemini_tts(_):
     cfg = {"tts_provider": "gemini", "gemini_api_key": "k"}
     assert isinstance(get_tts_provider(cfg), GeminiTTSProvider)
 
+def test_system_voice_tts():
+    from providers.system_voice import SystemVoiceTTSProvider
+    assert isinstance(get_tts_provider({"tts_provider": "system"}), SystemVoiceTTSProvider)
+
 def test_unknown_tts_provider_raises():
     with pytest.raises(ProviderError):
         get_tts_provider({"tts_provider": "nope"})
