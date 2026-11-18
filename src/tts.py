@@ -65,6 +65,8 @@ def _friendly(message):
     The raw text is accurate but not actionable — 'model file not found:
     /long/path.onnx' doesn't tell anyone to run `make models`."""
     low = message.lower()
+    if "could not download voice" in low:
+        return "Could not download the Piper voice. Check your internet connection"
     if "model file not found" in low:
         return "Voice model missing — run `make models` to download it"
     if "api key not valid" in low or "api_key_invalid" in low:
