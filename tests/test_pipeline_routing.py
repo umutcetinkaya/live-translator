@@ -205,3 +205,18 @@ def test_not_ready_error_hidden_while_downloading(monkeypatch):
     assert len(_messages(overlay)) == before
     dl.gate.set()
     p._download_thread.join(5)
+
+
+def test_progress_survives_incoming_speech(monkeypatch):
+    # Video oynarken her yeni kısmi metin satırı yeniler; ilerleme kaybolmamalı
+    dl = GatedDownload()
+    p, overlay = _local_pipeline(monkeypatch, dl)
+    p.ensure_local_model()
+    p._on_partial("hello everyone and welcome back")
+    last = _messages(overlay)[-1]
+    assert "welcome back" in last and "50%" in last
+    assert last.endswith("%")  # overlay keeps the END of long text
+    dl.gate.set()
+    p._download_thread.join(5)
+    p._on_partial("next sentence")
+    assert _messages(overlay)[-1] == "next sentence"

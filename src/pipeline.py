@@ -67,6 +67,7 @@ class TranslationPipeline:
 
         self._download_thread = None
         self._download_lock = threading.Lock()
+        self._download_pct = 0
 
         self._realtime_mode = self._config.get("realtime_mode", False)
         self._realtime = None
@@ -117,6 +118,7 @@ class TranslationPipeline:
             pct = int(fraction * 100)
             if pct != last["pct"]:
                 last["pct"] = pct
+                self._download_pct = pct
                 self._overlay.update_original_on_main_thread(
                     f"⬇️ Downloading free translation model… {pct}%")
 
@@ -295,6 +297,10 @@ class TranslationPipeline:
 
     def _on_partial(self, text):
         self._current_partial = text
+        if self._downloading():
+            # Recognised text refreshes this line constantly; keep the
+            # progress visible at its end (the overlay shows the tail).
+            text = f"{text} · ⬇️ model {self._download_pct}%"
         self._overlay.update_original_on_main_thread(text)
         self._translator.update_source(self._full_source())
 
