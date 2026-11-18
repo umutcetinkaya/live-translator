@@ -13,7 +13,8 @@ from audio_capture import SystemAudioCapture
 from speech_recognizer import RealtimeSpeechRecognizer
 from translator import AITranslator
 from tts import TextToSpeech
-from config import load_config, save_config
+from config import load_config, save_config, normalize_model
+import model_store
 from providers import get_realtime_provider
 
 
@@ -64,6 +65,9 @@ class TranslationPipeline:
         self._current_partial = ""
         self._last_tts_text = ""
 
+        self._download_thread = None
+        self._download_lock = threading.Lock()
+
         self._realtime_mode = self._config.get("realtime_mode", False)
         self._realtime = None
         if self._realtime_mode:
@@ -82,8 +86,52 @@ class TranslationPipeline:
     def is_realtime(self):
         return self._realtime_mode
 
+    # --- Free on-device model ---
+
+    def _downloading(self):
+        t = self._download_thread
+        return t is not None and t.is_alive()
+
+    def ensure_local_model(self):
+        """Fetch the free translation model in the background if it is missing.
+
+        Recognition keeps running meanwhile, so the original text still shows;
+        only the translation waits. Called on start and on every settings
+        save, so a failed download is retried without restarting the app."""
+        if self._config.get("translation_provider") != "local":
+            return
+        repo = normalize_model(self._config.get("model", ""), "local")
+        if model_store.is_ready(repo):
+            return
+        with self._download_lock:
+            if self._downloading():
+                return
+            self._download_thread = threading.Thread(
+                target=self._download_local, args=(repo,), daemon=True)
+            self._download_thread.start()
+
+    def _download_local(self, repo):
+        last = {"pct": -1}
+
+        def progress(fraction):
+            pct = int(fraction * 100)
+            if pct != last["pct"]:
+                last["pct"] = pct
+                self._overlay.update_original_on_main_thread(
+                    f"⬇️ Downloading free translation model… {pct}%")
+
+        try:
+            model_store.download(repo, progress)
+        except model_store.ModelStoreError as e:
+            self._overlay.update_original_on_main_thread(f"⚠️ {e}")
+            return
+        self._overlay.update_original_on_main_thread(
+            "✅ Translation model ready, translating now")
+        self._translator.on_speech_pause()
+
     def start(self):
         print("[Pipeline] Starting...")
+        self.ensure_local_model()
         if self._realtime_mode and self._realtime:
             try:
                 self._realtime.start(
@@ -168,6 +216,7 @@ class TranslationPipeline:
         self._config = config
         self._translator.update_config(config)
         self._tts.update_config(config)
+        self.ensure_local_model()
 
     def clear(self):
         self._finalized_text = ""
@@ -224,6 +273,8 @@ class TranslationPipeline:
 
     def _on_translate_error(self, message):
         """Put translation failures on screen instead of only in the terminal."""
+        if self._downloading() and message.startswith("Downloading the free"):
+            return  # the progress line already says so, with a percentage
         self._overlay.update_original_on_main_thread(f"⚠️ {message}")
 
     def _on_tts_error(self, message):
