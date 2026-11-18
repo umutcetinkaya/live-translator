@@ -4,6 +4,49 @@ import QuartzCore
 let W: CGFloat = 540
 let H: CGFloat = 460
 
+// Free on-device mode. Keep in sync with src/local_models.py
+// (MIN_MACOS, LOCAL_MODELS, RAM_THRESHOLD_BYTES).
+let MIN_MACOS = OperatingSystemVersion(majorVersion: 14, minorVersion: 0, patchVersion: 0)
+let STANDARD_MODEL = "mlx-community/Qwen3-4B-Instruct-2507-4bit"
+let SMALL_MODEL = "mlx-community/Qwen3-1.7B-4bit"
+let RAM_THRESHOLD: UInt64 = 16 * 1024 * 1024 * 1024
+let CONFIG_PATH = NSHomeDirectory() + "/.live-translator.json"
+
+func isAppleSilicon() -> Bool {
+    var value: Int32 = 0
+    var size = MemoryLayout<Int32>.size
+    return sysctlbyname("hw.optional.arm64", &value, &size, nil, 0) == 0 && value == 1
+}
+
+func freeModeSupported() -> Bool {
+    return isAppleSilicon() && ProcessInfo.processInfo.isOperatingSystemAtLeast(MIN_MACOS)
+}
+
+func lowMemory() -> Bool {
+    return ProcessInfo.processInfo.physicalMemory < RAM_THRESHOLD
+}
+
+func readConfig() -> [String: Any] {
+    guard let data = try? Data(contentsOf: URL(fileURLWithPath: CONFIG_PATH)),
+          let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [:] }
+    return json
+}
+
+func writeConfig(_ config: [String: Any]) {
+    if let data = try? JSONSerialization.data(withJSONObject: config, options: .prettyPrinted) {
+        try? data.write(to: URL(fileURLWithPath: CONFIG_PATH))
+    }
+}
+
+/// A translation path is chosen: the free model, or any cloud API key.
+func isConfigured(_ c: [String: Any]) -> Bool {
+    if (c["translation_provider"] as? String) == "local" { return true }
+    for k in ["openai_api_key", "gemini_api_key", "anthropic_api_key"] {
+        if let v = c[k] as? String, !v.isEmpty { return true }
+    }
+    return false
+}
+
 class SetupWindow: NSWindow, NSTextFieldDelegate {
     var apiKeyField: NSTextField!
     var progressBar: NSProgressIndicator!
@@ -40,13 +83,12 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
         mainMenu.addItem(editMenuItem)
         NSApp.mainMenu = mainMenu
 
-        // Check if key already exists
-        let configPath = NSHomeDirectory() + "/.live-translator.json"
-        if let data = try? Data(contentsOf: URL(fileURLWithPath: configPath)),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let key = json["openai_api_key"] as? String, !key.isEmpty {
+        // Already configured (free mode or a key): skip to installation
+        if isConfigured(readConfig()) {
             hasKey = true
-            showStep2()  // Key exists, skip to installation
+            showStep2()
+        } else if freeModeSupported() {
+            showChoice()
         } else {
             showStep1()
         }
@@ -121,7 +163,51 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
     }
 
     // ═══════════════════════════════════════
-    // MARK: Step 1 — API Key
+    // MARK: Step 1 — Free mode or own key
+    // ═══════════════════════════════════════
+    func modelSizeText() -> String { return lowMemory() ? "about 1 GB" : "about 2.3 GB" }
+
+    func showChoice() {
+        clear()
+        guard let cv = contentView else { return }
+
+        cv.addSubview(stepBadge(1))
+        cv.addSubview(appIconView(H - 130))
+
+        cv.addSubview(lbl(NSRect(x: 30, y: H-180, width: W-60, height: 35),
+                          "Welcome to Live Translator", size: 24, weight: .bold))
+
+        cv.addSubview(lbl(NSRect(x: 50, y: H-225, width: W-100, height: 34),
+                          "Translate and hear any audio playing on your Mac, in real time.",
+                          size: 13, weight: .regular, color: NSColor(white: 0.45, alpha: 1)))
+
+        cv.addSubview(sep(H - 245))
+
+        cv.addSubview(greenBtn(NSRect(x: 70, y: H-310, width: W-140, height: 46),
+                               "Free · On-device (recommended)", action: #selector(onFree)))
+        cv.addSubview(lbl(NSRect(x: 50, y: H-352, width: W-100, height: 34),
+                          "No account, no API key. One-time download of \(modelSizeText()).\nAudio and text never leave your Mac.",
+                          size: 11, weight: .regular, color: NSColor(white: 0.45, alpha: 1)))
+
+        cv.addSubview(ghostBtn(NSRect(x: (W-260)/2, y: 70, width: 260, height: 30),
+                               "Use my own OpenAI API key instead", action: #selector(onUseKey)))
+        cv.addSubview(ghostBtn(NSRect(x: 45, y: 25, width: 70, height: 36), "Quit", action: #selector(onQuit)))
+    }
+
+    @objc func onFree() {
+        writeConfig([
+            "translation_provider": "local",
+            "model": lowMemory() ? SMALL_MODEL : STANDARD_MODEL,
+            "tts_provider": "system", "tts_enabled": true, "tts_speed": 1.0,
+            "source_locale": "en-US", "target_lang": "tr",
+        ])
+        showStep2()
+    }
+
+    @objc func onUseKey() { showStep1() }
+
+    // ═══════════════════════════════════════
+    // MARK: Step 1b — API Key
     // ═══════════════════════════════════════
     func showStep1() {
         clear()
@@ -165,7 +251,11 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
                           color: NSColor(red: 0.35, green: 0.65, blue: 0.5, alpha: 0.8), align: .left))
 
         // Buttons
-        cv.addSubview(ghostBtn(NSRect(x: 45, y: 25, width: 70, height: 36), "Quit", action: #selector(onQuit)))
+        if freeModeSupported() {
+            cv.addSubview(ghostBtn(NSRect(x: 45, y: 25, width: 70, height: 36), "← Back", action: #selector(onBack)))
+        } else {
+            cv.addSubview(ghostBtn(NSRect(x: 45, y: 25, width: 70, height: 36), "Quit", action: #selector(onQuit)))
+        }
         cv.addSubview(greenBtn(NSRect(x: W-170, y: 22, width: 130, height: 42), "Next →", action: #selector(onNext1)))
     }
 
@@ -185,15 +275,25 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
             return
         }
 
-        // Save config
-        let config: [String: Any] = [
-            "openai_api_key": key, "source_locale": "en-US", "target_lang": "tr",
-            "model": "gpt-4o-mini", "tts_provider": "piper", "tts_voice": "nova", "tts_speed": 1.0
-        ]
-        if let data = try? JSONSerialization.data(withJSONObject: config, options: .prettyPrinted) {
-            try? data.write(to: URL(fileURLWithPath: NSHomeDirectory() + "/.live-translator.json"))
-        }
+        // Save config. Translation uses the key; speech uses the free system
+        // voices (available on every Mac), so no voice models are downloaded.
+        writeConfig([
+            "translation_provider": "openai", "openai_api_key": key,
+            "source_locale": "en-US", "target_lang": "tr", "model": "gpt-5.4-mini",
+            "tts_provider": "system", "tts_enabled": true, "tts_voice": "nova", "tts_speed": 1.0,
+        ])
         showStep2()
+    }
+
+    @objc func onBack() { showChoice() }
+
+    /// Piper voices are only fetched up front when Piper is the chosen voice.
+    func needsPiperModels() -> Bool {
+        return (readConfig()["tts_provider"] as? String ?? "piper") == "piper"
+    }
+
+    func usesFreeModel() -> Bool {
+        return (readConfig()["translation_provider"] as? String) == "local"
     }
 
     // ═══════════════════════════════════════
@@ -210,7 +310,8 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
                           "Setting up...", size: 24, weight: .bold))
 
         cv.addSubview(lbl(NSRect(x: 50, y: H-215, width: W-100, height: 30),
-                          "Installing packages and downloading voice models.\nThis only happens once.",
+                          needsPiperModels() ? "Installing packages and downloading voice models.\nThis only happens once."
+                                             : "Installing packages.\nThis only happens once.",
                           size: 13, weight: .regular, color: NSColor(white: 0.42, alpha: 1)))
 
         cv.addSubview(sep(H - 235))
@@ -234,7 +335,8 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
         cv.addSubview(statusLabel)
 
         // Checklist
-        let items = ["Python environment", "Required packages", "Voice models (~580MB)"]
+        var items = ["Python environment", "Required packages"]
+        if needsPiperModels() { items.append("Voice models (~580MB)") }
         for (i, item) in items.enumerated() {
             let y = H - CGFloat(328 + i * 32)
             let dot = lbl(NSRect(x: 70, y: y, width: 20, height: 22), "○",
@@ -336,12 +438,14 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
         setProgress(60, "Packages installed")
         Thread.sleep(forTimeInterval: 0.3)
 
-        setProgress(65, "Downloading voice models...")
-        let dl = resourceDir + "/scripts/download_models.sh"
-        if FileManager.default.fileExists(atPath: dl) {
-            shell(["/bin/bash", dl], log, cwd: resourceDir)
+        if needsPiperModels() {
+            setProgress(65, "Downloading voice models...")
+            let dl = resourceDir + "/scripts/download_models.sh"
+            if FileManager.default.fileExists(atPath: dl) {
+                shell(["/bin/bash", dl], log, cwd: resourceDir)
+            }
+            checkItem(2)
         }
-        checkItem(2)
         setProgress(100, "All done!")
 
         Thread.sleep(forTimeInterval: 0.5)
@@ -395,7 +499,9 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
         cv.addSubview(sep(H - 205))
 
         cv.addSubview(lbl(NSRect(x: 50, y: H-280, width: W-100, height: 60),
-                          "Live Translator is ready.\n\nPlay any audio on your Mac and translations\nwill appear in the floating panel.\n\nYou can change settings anytime from the panel.",
+                          usesFreeModel()
+                            ? "Live Translator is ready.\n\nThe free translation model (\(modelSizeText())) downloads in the\nbackground the first time it starts. Progress shows in the panel.\n\nYou can change settings anytime from the panel."
+                            : "Live Translator is ready.\n\nPlay any audio on your Mac and translations\nwill appear in the floating panel.\n\nYou can change settings anytime from the panel.",
                           size: 13, weight: .regular, color: NSColor(white: 0.48, alpha: 1)))
 
         cv.addSubview(greenBtn(NSRect(x: (W-170)/2, y: 30, width: 170, height: 46),

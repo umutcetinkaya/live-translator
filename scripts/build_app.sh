@@ -86,14 +86,15 @@ MARKER="/tmp/.livetranslator_launch"
 
 mkdir -p "${SUPPORT}" 2>/dev/null
 
-HAS_KEY=false
+HAS_SETUP=false
 HAS_VENV=false
 
+# Set up = a translation path is chosen: the free on-device model, or any
+# cloud API key. Swift writes `"key" : "value"`, Python `"key": "value"`.
 if [ -f "${CONFIG}" ]; then
-    if grep -q '"openai_api_key"' "${CONFIG}" 2>/dev/null; then
-        if ! grep -q '"openai_api_key": ""' "${CONFIG}" 2>/dev/null; then
-            HAS_KEY=true
-        fi
+    if grep -Eq '"translation_provider"[[:space:]]*:[[:space:]]*"local"' "${CONFIG}" 2>/dev/null \
+       || grep -Eq '"(openai|gemini|anthropic)_api_key"[[:space:]]*:[[:space:]]*"[^"]+' "${CONFIG}" 2>/dev/null; then
+        HAS_SETUP=true
     fi
 fi
 
@@ -102,7 +103,7 @@ if [ -f "${VENV}/bin/python" ]; then
 fi
 
 # Need setup?
-if [ "${HAS_KEY}" = false ] || [ "${HAS_VENV}" = false ]; then
+if [ "${HAS_SETUP}" = false ] || [ "${HAS_VENV}" = false ]; then
     rm -f "${MARKER}" 2>/dev/null
     "${DIR}/scripts/setup_wizard" "${DIR}" 2>>"${LOG}"
 
