@@ -5,8 +5,12 @@ def test_new_default_keys():
     for k in ("translation_provider", "gemini_api_key", "realtime_mode"):
         assert k in DEFAULTS
 
-def test_default_provider_openai():
-    assert DEFAULTS["translation_provider"] == "openai"
+def test_default_provider_is_free_when_supported(monkeypatch):
+    import config, local_models
+    monkeypatch.setattr(local_models, "is_supported", lambda *a, **k: True)
+    assert config.fresh_defaults()["translation_provider"] == "local"
+    monkeypatch.setattr(local_models, "is_supported", lambda *a, **k: False)
+    assert config.fresh_defaults()["translation_provider"] == "openai"
 
 def test_models_per_provider():
     assert "openai" in MODELS and "gemini" in MODELS

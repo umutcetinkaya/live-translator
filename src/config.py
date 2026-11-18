@@ -20,6 +20,7 @@ DEFAULTS = {
     "tts_provider": "piper",
     "tts_voice": "nova",
     "tts_speed": 1.0,
+    "tts_enabled": False,
     "realtime_mode": False,
 }
 
@@ -71,14 +72,48 @@ TARGET_LANGUAGES = {
 }
 
 
-def load_config():
+def fresh_defaults():
+    """Defaults for a brand-new install: free and on-device where possible."""
     config = dict(DEFAULTS)
-    if os.path.exists(CONFIG_PATH):
-        try:
-            with open(CONFIG_PATH, "r") as f:
-                config.update(json.load(f))
-        except Exception:
-            pass
+    if local_models.is_supported():
+        config.update({
+            "translation_provider": "local",
+            "model": local_models.default_model(),
+            "tts_provider": "system",
+        })
+    config["tts_enabled"] = True
+    return config
+
+
+def _legacy_defaults(saved):
+    """Defaults for a config written before the free mode existed.
+
+    Those files never stored `translation_provider` (the setup wizard did not
+    write it), so the provider is inferred from whichever API key is present.
+    Speech stays off: turning it on unasked could mean paid TTS calls."""
+    config = dict(DEFAULTS)
+    for key, provider in (("openai_api_key", "openai"),
+                          ("gemini_api_key", "gemini"),
+                          ("anthropic_api_key", "claude")):
+        if saved.get(key):
+            config["translation_provider"] = provider
+            break
+    config["tts_enabled"] = False
+    return config
+
+
+def load_config():
+    if not os.path.exists(CONFIG_PATH):
+        return fresh_defaults()
+    try:
+        with open(CONFIG_PATH, "r") as f:
+            saved = json.load(f)
+        if not isinstance(saved, dict):
+            saved = {}
+    except Exception:
+        saved = {}
+    config = _legacy_defaults(saved)
+    config.update(saved)
     return config
 
 
