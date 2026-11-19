@@ -173,13 +173,13 @@ class OpenAITTSProvider(TTSProvider):
                     ws = self._session(voice, speed)
                     pcm = self._speak(ws, text)
                     break
-                except ProviderError:
-                    self._close()
-                    raise
                 except Exception as e:
-                    # A long pause can let the server drop the socket: reconnect once.
+                    # A dropped socket or an expired session (sessions have a
+                    # maximum length) is fixed by a fresh session: retry once.
                     self._close()
                     if attempt == 2:
+                        if isinstance(e, ProviderError):
+                            raise
                         raise ProviderError(f"OpenAI TTS error: {e}") from e
         path = os.path.join(self._tmp_dir, "tts_output_openai.wav")
         with wave.open(path, "wb") as f:

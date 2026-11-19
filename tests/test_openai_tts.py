@@ -165,15 +165,24 @@ def test_voices_from_speech_api_are_mapped():
 
 def test_api_error_event_becomes_provider_error(tmp_path):
     err = [{"type": "error", "error": {"message": "Incorrect API key provided"}}]
-    p, _ = _provider(tmp_path, Factory(FakeWS(replies=[err])))
+    p, _ = _provider(tmp_path, Factory(FakeWS(replies=[list(err)]), FakeWS(replies=[list(err)])))
     with pytest.raises(ProviderError, match="Incorrect API key"):
         p.synthesize("Merhaba", "tr", "marin", 1.0)
+
+
+def test_expired_session_is_reopened_without_losing_the_sentence(tmp_path):
+    # Realtime oturumlarının azami süresi var; uzun bir filmde dolabilir
+    expired = [{"type": "error", "error": {"type": "invalid_request_error",
+                                           "message": "Your session hit the maximum duration."}}]
+    p, factory = _provider(tmp_path, Factory(FakeWS(replies=[expired]), FakeWS()))
+    assert p.synthesize("Merhaba", "tr", "marin", 1.0).endswith(".wav")
+    assert len(factory.calls) == 2
 
 
 def test_failed_response_is_reported(tmp_path):
     failed = [{"type": "response.done",
                "response": {"status": "failed", "status_details": {"error": {"message": "server busy"}}}}]
-    p, _ = _provider(tmp_path, Factory(FakeWS(replies=[failed])))
+    p, _ = _provider(tmp_path, Factory(FakeWS(replies=[list(failed)]), FakeWS(replies=[list(failed)])))
     with pytest.raises(ProviderError, match="server busy"):
         p.synthesize("Merhaba", "tr", "marin", 1.0)
 
