@@ -3,6 +3,9 @@
 import json
 import os
 
+import local_models
+from local_models import LOCAL_MODELS
+
 CONFIG_PATH = os.path.expanduser("~/.live-translator.json")
 
 DEFAULTS = {
@@ -17,10 +20,12 @@ DEFAULTS = {
     "tts_provider": "piper",
     "tts_voice": "nova",
     "tts_speed": 1.0,
+    "tts_enabled": False,
     "realtime_mode": False,
 }
 
 MODELS = {
+    "local": [LOCAL_MODELS["small"], LOCAL_MODELS["standard"], LOCAL_MODELS["large"]],
     "openai": ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5.5"],
     "gemini": ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash"],
     "claude": ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
@@ -32,6 +37,9 @@ def normalize_model(model, provider):
     valid = MODELS.get(provider, [])
     if model in valid:
         return model
+    if provider == "local":
+        # The default local model depends on this Mac's memory.
+        return local_models.default_model()
     return valid[0] if valid else model
 
 SOURCE_LANGUAGES = {
@@ -63,15 +71,56 @@ TARGET_LANGUAGES = {
     "Português": "pt",
 }
 
+# English names the translation prompts use for each target language code.
+LANGUAGE_NAMES = {
+    "tr": "Turkish", "en": "English", "de": "German", "fr": "French",
+    "es": "Spanish", "it": "Italian", "ja": "Japanese", "zh": "Chinese",
+    "ko": "Korean", "ru": "Russian", "ar": "Arabic", "pt": "Portuguese",
+}
+
+
+def fresh_defaults():
+    """Defaults for a brand-new install: free and on-device where possible."""
+    config = dict(DEFAULTS)
+    if local_models.is_supported():
+        config.update({
+            "translation_provider": "local",
+            "model": local_models.default_model(),
+            "tts_provider": "system",
+        })
+    config["tts_enabled"] = True
+    return config
+
+
+def _legacy_defaults(saved):
+    """Defaults for a config written before the free mode existed.
+
+    Those files never stored `translation_provider` (the setup wizard did not
+    write it), so the provider is inferred from whichever API key is present.
+    Speech stays off: turning it on unasked could mean paid TTS calls."""
+    config = dict(DEFAULTS)
+    for key, provider in (("openai_api_key", "openai"),
+                          ("gemini_api_key", "gemini"),
+                          ("anthropic_api_key", "claude")):
+        if saved.get(key):
+            config["translation_provider"] = provider
+            break
+    config["tts_enabled"] = False
+    return config
+
 
 def load_config():
-    config = dict(DEFAULTS)
-    if os.path.exists(CONFIG_PATH):
-        try:
-            with open(CONFIG_PATH, "r") as f:
-                config.update(json.load(f))
-        except Exception:
-            pass
+    if not os.path.exists(CONFIG_PATH):
+        return fresh_defaults()
+    try:
+        with open(CONFIG_PATH, "r") as f:
+            saved = json.load(f)
+        if not isinstance(saved, dict):
+            saved = {}
+    except Exception:
+        saved = {}
+    config = _legacy_defaults(saved)
+    config.update(saved)
     return config
 
 

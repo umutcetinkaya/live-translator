@@ -11,7 +11,7 @@ read-only context.
 
 import threading
 import time
-from config import load_config, normalize_model
+from config import load_config, normalize_model, LANGUAGE_NAMES
 from providers import get_translation_provider
 from providers.base import ProviderError
 from segmenter import split_sentences, stable_prefix, flush_prefix
@@ -25,6 +25,8 @@ CONTEXT_SENTENCES = 2
 def _friendly(message):
     """Turn a provider error into something the user can act on."""
     low = message.lower()
+    if "local model not ready" in low:
+        return "Downloading the free translation model…"
     if "no api key" in low or "authentication" in low or "401" in low:
         return "Translation API key missing or invalid — check Settings"
     if "rate_limit" in low or "429" in low:
@@ -85,12 +87,7 @@ class AITranslator:
             self._committed_source = ""
 
     def _lang_name(self):
-        names = {
-            "tr": "Turkish", "en": "English", "de": "German", "fr": "French",
-            "es": "Spanish", "it": "Italian", "ja": "Japanese", "zh": "Chinese",
-            "ko": "Korean", "ru": "Russian", "ar": "Arabic", "pt": "Portuguese",
-        }
-        return names.get(self._target_lang, self._target_lang)
+        return LANGUAGE_NAMES.get(self._target_lang, self._target_lang)
 
     def _context_sentences(self, n=CONTEXT_SENTENCES):
         """Last n committed source sentences, as read-only background.
@@ -105,6 +102,16 @@ class AITranslator:
             if not self._running:
                 break
             self._translate_pending()
+
+    def skip_backlog(self):
+        """Mark everything already settled as handled, without translating it.
+
+        Used when the free model finishes downloading: minutes of speech piled
+        up meanwhile, and translating it as one block would be truncated and
+        spoken far behind the picture. Translation picks up from here."""
+        with self._lock:
+            settled, _tail = stable_prefix(self._source_buffer)
+            self._committed_source = settled
 
     def on_speech_pause(self):
         """Speaker stopped — translate whatever is still waiting.

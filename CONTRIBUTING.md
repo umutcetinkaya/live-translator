@@ -57,6 +57,7 @@ src/
 - Keep code in English (comments, variables, docs)
 - Test on macOS 13+ before submitting PRs
 - Don't commit API keys, credentials, or personal config files
+- Add a line for user-visible changes to `CHANGELOG.md` under **Unreleased**
 - Follow existing code style
 
 ## Reporting Issues

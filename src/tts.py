@@ -65,12 +65,17 @@ def _friendly(message):
     The raw text is accurate but not actionable — 'model file not found:
     /long/path.onnx' doesn't tell anyone to run `make models`."""
     low = message.lower()
+    if "could not download voice" in low:
+        return "Could not download the Piper voice. Check your internet connection"
     if "model file not found" in low:
         return "Voice model missing — run `make models` to download it"
     if "api key not valid" in low or "api_key_invalid" in low:
         return "TTS API key is not valid — check it in Settings"
     if "no api key" in low:
         return "No TTS API key — add one in Settings"
+    if "system voice: no voice for" in low:
+        return ("No system voice for this language. Pick Piper or a cloud voice, "
+                "or add one in System Settings › Accessibility › Spoken Content")
     if "no voice for" in low:
         return "No offline voice for this language — pick OpenAI or Gemini TTS"
     return message
@@ -92,6 +97,8 @@ class TextToSpeech:
         self._speech_level = float(self._config.get("speech_level", PEAK_TARGET))
         self._provider_name = self._config.get("tts_provider", "piper")
         self._provider = get_tts_provider(self._config)
+        if self._config.get("tts_enabled"):
+            self.set_enabled(True)
 
     # --- Live controls, driven from the panel above the transcript ---
 
@@ -162,6 +169,7 @@ class TextToSpeech:
         self._voice = config.get("tts_voice", self._voice)
         self._speed = config.get("tts_speed", self._speed)
         self._provider = get_tts_provider(config)
+        self._provider_name = config.get("tts_provider", self._provider_name)
 
     def speak(self, text):
         """Queue a translation to be spoken, oldest first.
@@ -260,10 +268,16 @@ class TextToSpeech:
             except Exception:
                 pass
 
+    def _voice_for_provider(self):
+        """Each provider has its own voice names; never cross them."""
+        if self._provider_name == "system":
+            return self._config.get("tts_voice_system", "")
+        return self._voice
+
     def _synthesize_and_play(self, text):
         try:
-            path = self._provider.synthesize(text, self._lang, self._voice,
-                                             self._speed)
+            path = self._provider.synthesize(text, self._lang,
+                                             self._voice_for_provider(), self._speed)
         except ProviderError as e:
             self._report_error(str(e))
             return

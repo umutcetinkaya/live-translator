@@ -86,14 +86,15 @@ MARKER="/tmp/.livetranslator_launch"
 
 mkdir -p "${SUPPORT}" 2>/dev/null
 
-HAS_KEY=false
+HAS_SETUP=false
 HAS_VENV=false
 
+# Set up = a translation path is chosen: the free on-device model, or any
+# cloud API key. Swift writes `"key" : "value"`, Python `"key": "value"`.
 if [ -f "${CONFIG}" ]; then
-    if grep -q '"openai_api_key"' "${CONFIG}" 2>/dev/null; then
-        if ! grep -q '"openai_api_key": ""' "${CONFIG}" 2>/dev/null; then
-            HAS_KEY=true
-        fi
+    if grep -Eq '"translation_provider"[[:space:]]*:[[:space:]]*"local"' "${CONFIG}" 2>/dev/null \
+       || grep -Eq '"(openai|gemini|anthropic)_api_key"[[:space:]]*:[[:space:]]*"[^"]+' "${CONFIG}" 2>/dev/null; then
+        HAS_SETUP=true
     fi
 fi
 
@@ -102,7 +103,7 @@ if [ -f "${VENV}/bin/python" ]; then
 fi
 
 # Need setup?
-if [ "${HAS_KEY}" = false ] || [ "${HAS_VENV}" = false ]; then
+if [ "${HAS_SETUP}" = false ] || [ "${HAS_VENV}" = false ]; then
     rm -f "${MARKER}" 2>/dev/null
     "${DIR}/scripts/setup_wizard" "${DIR}" 2>>"${LOG}"
 
@@ -111,6 +112,17 @@ if [ "${HAS_KEY}" = false ] || [ "${HAS_VENV}" = false ]; then
     fi
     rm -f "${MARKER}" 2>/dev/null
 fi
+
+# >>> venv refresh
+# An update can bring new requirements (e.g. mlx-lm for the free mode), but
+# an existing venv skips the wizard; reinstall when requirements.txt changed.
+REQ_HASH="$(shasum "${DIR}/requirements.txt" 2>/dev/null | cut -d' ' -f1)"
+STAMP="${SUPPORT}/requirements.sha1"
+if [ "${HAS_VENV}" = true ] && [ -n "${REQ_HASH}" ] && [ "$(cat "${STAMP}" 2>/dev/null)" != "${REQ_HASH}" ]; then
+    "${VENV}/bin/python" -m pip install -q -r "${DIR}/requirements.txt" >>"${LOG}" 2>&1 \
+        && echo "${REQ_HASH}" > "${STAMP}"
+fi
+# <<< venv refresh
 
 # Launch
 cd "${DIR}"

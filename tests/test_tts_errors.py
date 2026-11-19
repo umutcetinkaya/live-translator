@@ -118,3 +118,8 @@ def test_missing_model_message_is_actionable(monkeypatch):
     t, errors = _make(monkeypatch, prov)
     t._synthesize_and_play("Merhaba")
     assert "make models" in errors[0].lower()
+
+
+def test_piper_download_failure_is_actionable():
+    msg = tts_mod._friendly("Piper: could not download voice 'tr': offline")
+    assert "internet" in msg.lower()

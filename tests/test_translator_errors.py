@@ -106,3 +106,9 @@ def test_works_without_callback(monkeypatch):
                              "translation_provider": "claude"})
     t.update_source("Hello.")
     t._translate_pending()   # çökmemeli
+
+
+def test_local_model_not_ready_message():
+    # Model inerken ham "not ready" hatası yerine anlaşılır durum metni
+    assert translator_mod._friendly("Local model not ready") == \
+        "Downloading the free translation model…"
