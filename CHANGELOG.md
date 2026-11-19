@@ -7,6 +7,8 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-19
+
 ### Changed
 
 - Cloud models updated: OpenAI GPT-6 Luna (default), GPT-6.1 Terra and GPT-6.2 Sol; Gemini 3.5 Flash-Lite (default), 3.6 Flash and 3.8 Flash; Claude Haiku 5.5 (default), Sonnet 5.5 and Opus 5.5. Each model is asked for the least reasoning it allows, which keeps subtitles fast.
@@ -82,7 +84,8 @@ Live Translator is now free: translation and speech run on the Mac, with no acco
 - Text-to-speech with Piper (offline) or OpenAI voices.
 - Setup wizard and in-app settings.
 
-[Unreleased]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/umutcetinkaya/live-translator/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/umutcetinkaya/live-translator/compare/v0.0.1...v0.1.0
 [0.0.1]: https://github.com/umutcetinkaya/live-translator/releases/tag/v0.0.1
