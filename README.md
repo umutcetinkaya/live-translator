@@ -95,7 +95,7 @@ System Audio → Speech Recognition → AI Translation → Live Overlay
 
 1. Download → Open DMG → Drag to **Applications**
 2. Launch → Setup wizard guides you through everything
-3. Pick **Free · On-device** (recommended), or enter your own API key: [OpenAI](https://platform.openai.com), [Gemini](https://aistudio.google.com/apikey), or [Anthropic](https://console.anthropic.com)
+3. Pick **Free · On-device** (recommended), or enter your own [OpenAI](https://platform.openai.com) API key. [Gemini](https://aistudio.google.com/apikey) and [Anthropic](https://console.anthropic.com) keys can be added later in Settings
 4. Grant **Screen & System Audio Recording** permission when prompted
 5. Play any audio → translations appear live and are read aloud
 

@@ -57,7 +57,9 @@ def delete(repo_id):
 
 
 def _friendly(exc):
-    if isinstance(exc, OSError) and exc.errno == errno.ENOSPC:
+    # hf-xet reports a full disk as a RuntimeError carrying the OS message.
+    if (isinstance(exc, OSError) and exc.errno == errno.ENOSPC) \
+            or "no space left" in str(exc).lower():
         return "Not enough disk space to download the translation model"
     if isinstance(exc, (ConnectionError, TimeoutError)) or "connect" in str(exc).lower():
         return "Network problem while downloading the translation model"
@@ -71,12 +73,11 @@ def download(repo_id, on_progress=None, hub=None):
     which works for any hub implementation and needs no hooks into it."""
     hub = hub or HuggingFaceHub()
     target = model_dir(repo_id)
-    os.makedirs(target, exist_ok=True)
     marker = os.path.join(target, _MARKER)
-    if os.path.exists(marker):
-        os.remove(marker)
-
     try:
+        os.makedirs(target, exist_ok=True)
+        if os.path.exists(marker):
+            os.remove(marker)
         total = hub.total_size(repo_id)
     except Exception as e:
         raise ModelStoreError(_friendly(e)) from e
@@ -98,8 +99,11 @@ def download(repo_id, on_progress=None, hub=None):
         done.set()
         watcher.join()
 
-    with open(marker, "w") as f:
-        f.write(repo_id)
+    try:
+        with open(marker, "w") as f:
+            f.write(repo_id)
+    except OSError as e:
+        raise ModelStoreError(_friendly(e)) from e
     if on_progress:
         on_progress(1.0)
     return target

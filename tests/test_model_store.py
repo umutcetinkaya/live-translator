@@ -71,6 +71,22 @@ def test_download_error_reported(tmp_store):
         model_store.download("a/b", hub=FakeHub(fail_after=0, error=full))
 
 
+def test_xet_disk_full_is_friendly(tmp_store):
+    # hf-xet disk dolunca OSError değil, Rust hatasını taşıyan RuntimeError atar
+    full = RuntimeError("Data processing error: I/O error: No space left on device (os error 28)")
+    with pytest.raises(model_store.ModelStoreError, match="^Not enough disk space"):
+        model_store.download("a/b", hub=FakeHub(fail_after=0, error=full))
+
+
+def test_folder_creation_failure_is_friendly(tmp_store, monkeypatch):
+    # Klasör açılamazsa ham OSError değil, anlaşılır mesaj çıkmalı
+    def full(*a, **k):
+        raise OSError(errno.ENOSPC, "No space left on device")
+    monkeypatch.setattr(model_store.os, "makedirs", full)
+    with pytest.raises(model_store.ModelStoreError, match="^Not enough disk space"):
+        model_store.download("a/b", hub=FakeHub())
+
+
 def test_network_error_message(tmp_store):
     with pytest.raises(model_store.ModelStoreError, match="Network"):
         model_store.download("a/b", hub=FakeHub(fail_after=0))
