@@ -186,7 +186,7 @@ macOS ships a basic voice per language. For a much more natural one, open **Syst
 |----------|------|------|
 | **System voice** (default) | Free, offline, instant, every language; natural with Enhanced/Premium voices | Basic voices sound flat until you download a better one |
 | **Piper** | Free, offline, fast | Robotic voice; downloads the voice for your language on first use |
-| **OpenAI TTS** | Natural voices (Nova, Shimmer, Alloy, Echo, Fable, Onyx) | Costs money |
+| **OpenAI** | Natural voices through the Realtime API (Marin and Cedar recommended, 8 more) | Costs money; speeds above 1.5x are capped |
 | **Gemini TTS** | Natural voices via Gemini | Costs money |
 
 Spoken translations are loudness-normalised, and the source audio is turned down while they play. The app's own voice is filtered out of the capture, so there are no feedback loops.
