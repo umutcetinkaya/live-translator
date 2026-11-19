@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.0-macOS.dmg">
+  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.1-macOS.dmg">
     <img src="https://img.shields.io/badge/⬇_Download_for_Mac-free-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download" height="36">
   </a>
   &nbsp;&nbsp;
@@ -88,7 +88,11 @@ System Audio  →  Speech Recognition  →  Translation              →  Overla
 - **Auto-recovery**: a watchdog detects and recovers from stuck states
 - **Menu bar app**: runs quietly with a 🌐 icon
 
-## What's new in v0.2.0
+## What's new in v0.2
+
+**v0.2.1** brings the cloud models up to date (GPT-6, Gemini 3.x, Claude 5.5) before older ones shut down, and keeps the tier you picked when your model is replaced.
+
+**v0.2.0:**
 
 - **Completely free out of the box.** No API key needed: translation runs on your Mac with TranslateGemma, and translations are read aloud with macOS voices.
 - **Picked for accuracy.** The on-device model was chosen by testing what usually goes wrong: weekdays, times, numbers and negations.
@@ -101,7 +105,7 @@ Read the full story in **[What's new](WHATS-NEW.md)**, or every change in the **
 
 ### Option 1: DMG (Recommended)
 
-<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.0-macOS.dmg">
+<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.1-macOS.dmg">
   <img src="https://img.shields.io/badge/⬇_Download_DMG-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download DMG">
 </a>
 
