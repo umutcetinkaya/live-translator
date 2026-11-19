@@ -69,6 +69,24 @@ class GeminiTranslationProvider(TranslationProvider):
 _TTS_RATE = 24000
 _TTS_MODEL = "gemini-3.8-flash-lite-tts"
 
+# Prebuilt Gemini voices. The voice setting is shared with OpenAI, so an
+# OpenAI name ("marin", "nova") can arrive here; Gemini would reject it.
+GEMINI_VOICES = (
+    "Zephyr", "Puck", "Charon", "Kore", "Fenrir", "Leda", "Orus", "Aoede",
+    "Callirrhoe", "Autonoe", "Enceladus", "Iapetus", "Umbriel", "Algieba",
+    "Despina", "Erinome", "Algenib", "Rasalgethi", "Laomedeia", "Achernar",
+    "Alnilam", "Schedar", "Gacrux", "Pulcherrima", "Achird", "Zubenelgenubi",
+    "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafat",
+)
+_DEFAULT_VOICE = "Kore"
+
+
+def _gemini_voice(voice):
+    """Prebuilt and custom (voice_..., voicekey_...) voices pass through."""
+    if voice in GEMINI_VOICES or (voice or "").startswith(("voice_", "voicekey_")):
+        return voice
+    return _DEFAULT_VOICE
+
 
 class GeminiTTSProvider(TTSProvider):
     def __init__(self, client, tmp_dir=None):
@@ -88,7 +106,7 @@ class GeminiTTSProvider(TTSProvider):
                     speech_config=types.SpeechConfig(
                         voice_config=types.VoiceConfig(
                             prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                                voice_name=voice or "Kore",
+                                voice_name=_gemini_voice(voice),
                             )
                         )
                     ),
