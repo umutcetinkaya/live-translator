@@ -81,12 +81,23 @@ def _friendly(message):
     return message
 
 
+def _retire(provider):
+    """Release a provider that is being replaced, without waiting for it.
+
+    The OpenAI provider keeps a Realtime WebSocket open; closing it waits for
+    any sentence it is still speaking, which must not block the caller (often
+    the main thread saving Settings)."""
+    close = getattr(provider, "close", None)
+    if callable(close):
+        threading.Thread(target=close, daemon=True).start()
+
+
 class TextToSpeech:
     def __init__(self, config=None, on_error=None):
         self._config = config or load_config()
         self._enabled = False
         self._lang = self._config.get("target_lang", "tr")
-        self._voice = self._config.get("tts_voice", "nova")
+        self._voice = self._config.get("tts_voice", "marin")
         self._speed = self._config.get("tts_speed", 1.0)
         self._queue = queue.Queue()
         self._worker = None
@@ -138,6 +149,7 @@ class TextToSpeech:
             return
         self._flush()          # queued audio was synthesised by the old voice
         self._config = cfg
+        _retire(self._provider)
         self._provider = provider
         self._provider_name = name
         print(f"[TTS] Provider -> {name}")
@@ -168,6 +180,7 @@ class TextToSpeech:
         self._lang = config.get("target_lang", self._lang)
         self._voice = config.get("tts_voice", self._voice)
         self._speed = config.get("tts_speed", self._speed)
+        _retire(self._provider)
         self._provider = get_tts_provider(config)
         self._provider_name = config.get("tts_provider", self._provider_name)
 
@@ -319,4 +332,5 @@ class TextToSpeech:
         self._enabled = False
         self._running = False
         self._flush()
+        _retire(self._provider)
         print("[TTS] Stopped")

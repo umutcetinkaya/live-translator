@@ -53,7 +53,7 @@ def get_tts_provider(config):
     if name == "piper":
         return PiperTTSProvider()
     if name == "openai":
-        return OpenAITTSProvider(client=_make_openai_client(config))
+        return OpenAITTSProvider(api_key=config.get("openai_api_key", ""))
     if name == "gemini":
         return GeminiTTSProvider(client=_make_gemini_client(config))
     if name == "claude":

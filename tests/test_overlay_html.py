@@ -7,6 +7,7 @@ Buradaki asıl risk: %-formatlama eksik bir template anahtarında KeyError ile
 """
 
 import ast
+import re
 import json
 import os
 import sys
@@ -16,6 +17,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "src"))
 
 from config import SOURCE_LANGUAGES, TARGET_LANGUAGES, MODELS, OVERLAY_OPACITY, normalize_model
+from providers.openai import REALTIME_VOICES, realtime_voice
 
 _OVERLAY_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "src", "overlay.py"
@@ -34,6 +36,8 @@ def _load_build_html():
         "TARGET_LANGUAGES": TARGET_LANGUAGES,
         "MODELS": MODELS,
         "normalize_model": normalize_model,
+        "REALTIME_VOICES": REALTIME_VOICES,
+        "realtime_voice": realtime_voice,
         "OVERLAY_OPACITY": OVERLAY_OPACITY,
     }
     exec(compile(ast.Module(body=fns, type_ignores=[]), "<overlay>", "exec"), ns)
@@ -194,3 +198,25 @@ def test_save_settings_passes_system_voice(build_html):
 
 def test_delete_model_action_in_page(build_html):
     assert "app://deleteLocalModel?model=" in build_html(_config(), _env())
+
+
+# --- OpenAI sesleri Realtime API'ye taşındı ---
+
+def test_openai_voice_list_shows_realtime_voices(build_html):
+    html = build_html(_config(tts_provider="openai", tts_voice="cedar"))
+    start = html.index('id="ttsVoice"')
+    block = html[start:html.index("</select>", start)]
+    values = re.findall(r'value="([a-z]+)"', block)
+    assert values == ["marin", "cedar", "alloy", "ash", "ballad", "coral",
+                      "echo", "sage", "shimmer", "verse"]
+    assert '<option value="cedar" selected>' in block
+    assert "Marin (recommended)" in block
+
+
+def test_saved_speech_api_voice_shows_its_realtime_match(build_html):
+    # "nova" Realtime'da yok; Ayarlar onun karşılığını (marin) seçili göstermeli
+    html = build_html(_config(tts_provider="openai", tts_voice="nova"))
+    start = html.index('id="ttsVoice"')
+    block = html[start:html.index("</select>", start)]
+    assert '<option value="marin" selected>' in block
+    assert 'value="nova"' not in block

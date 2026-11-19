@@ -164,7 +164,7 @@ class SetupWizard:
             "target_lang": "tr",
             "model": "gpt-6-luna",
             "tts_provider": "piper",
-            "tts_voice": "nova",
+            "tts_voice": "marin",
             "tts_speed": 1.0,
         }
         with open(CONFIG_PATH, "w") as f:

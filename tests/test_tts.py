@@ -59,3 +59,60 @@ def test_system_provider_uses_its_own_voice_setting(monkeypatch, tmp_path):
     monkeypatch.setattr(t, "_play_file", lambda p: None)
     t._synthesize_and_play("Merhaba")
     fake.synthesize.assert_called_once_with("Merhaba", "tr", "tr.enhanced", 1.0)
+
+
+# --- Sağlayıcı değişince eski bağlantı kapanmalı (OpenAI Realtime kalıcı WebSocket tutar) ---
+
+def _closable(monkeypatch):
+    made = []
+
+    def make(cfg):
+        p = MagicMock()
+        made.append(p)
+        return p
+    monkeypatch.setattr(tts_mod, "get_tts_provider", make)
+    return made
+
+
+def _wait_closed(provider):
+    import time
+    for _ in range(50):
+        if provider.close.called:
+            return True
+        time.sleep(0.01)
+    return False
+
+
+def test_update_config_closes_previous_provider(monkeypatch):
+    made = _closable(monkeypatch)
+    t = TextToSpeech(config={"tts_provider": "openai"})
+    t.update_config({"tts_provider": "system"})
+    assert _wait_closed(made[0])
+    assert not made[1].close.called
+
+
+def test_set_provider_closes_previous_provider(monkeypatch):
+    made = _closable(monkeypatch)
+    t = TextToSpeech(config={"tts_provider": "openai"})
+    t.set_provider("system")
+    assert _wait_closed(made[0])
+
+
+def test_stop_closes_provider(monkeypatch):
+    made = _closable(monkeypatch)
+    t = TextToSpeech(config={"tts_provider": "openai"})
+    t.stop()
+    assert _wait_closed(made[0])
+
+
+def test_closing_does_not_block_the_caller(monkeypatch):
+    # Kapatma, süren bir seslendirmeyi bekleyebilir; Ayarlar'ı kaydeden ana iş parçacığı beklememeli
+    import threading, time
+    made = _closable(monkeypatch)
+    gate = threading.Event()
+    t = TextToSpeech(config={"tts_provider": "openai"})
+    made[0].close.side_effect = lambda: gate.wait(2)
+    start = time.time()
+    t.update_config({"tts_provider": "system"})
+    assert time.time() - start < 0.5
+    gate.set()
