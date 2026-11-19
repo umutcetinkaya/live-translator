@@ -111,7 +111,7 @@ Read the full story in **[What's new](WHATS-NEW.md)**, or every change in the **
 4. Grant **Screen & System Audio Recording** permission when prompted
 5. Play any audio → translations appear live and are read aloud
 
-> **First launch:** If macOS blocks the app, right-click → Open, or run `xattr -cr /Applications/Live\ Translator.app`
+The app is signed and notarized by Apple, so it opens without a security warning.
 
 ### Option 2: Homebrew
 
@@ -290,7 +290,7 @@ Downloaded models live in `~/Library/Application Support/LiveTranslator/models`.
 
 | Problem | Solution |
 |---------|----------|
-| "Damaged and can't be opened" | Run `xattr -cr /Applications/Live\ Translator.app` |
+| "Damaged and can't be opened" | Download the DMG again from the [releases page](https://github.com/umutcetinkaya/live-translator/releases/latest); versions before 0.2.0 were not notarized |
 | No audio detected | Grant Screen & System Audio Recording permission, restart app |
 | STT stops working | Built-in watchdog auto-recovers within 10 seconds |
 | Translation not appearing | Free mode: wait for the model download shown in the panel. Cloud providers: check the API key in Settings |

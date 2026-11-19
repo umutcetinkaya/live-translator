@@ -27,6 +27,7 @@ Live Translator is now free: translation and speech run on the Mac, with no acco
 
 ### Changed
 
+- The app and the DMG are signed and notarized by Apple, so macOS opens them without a security warning.
 - New installs start in the free mode with speech on. Existing settings are kept: if you already use an API key, nothing changes.
 - Translation is incremental: each finished sentence is translated once and kept, instead of re-translating the whole transcript. Long sessions no longer slow down or get truncated.
 - A bounded context window keeps cost and latency flat on long sessions.
