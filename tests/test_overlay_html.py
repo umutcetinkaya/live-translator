@@ -117,6 +117,15 @@ def _env(**over):
     return env
 
 
+def test_switching_to_local_preselects_this_macs_default(build_html):
+    # Kayıtlı model bulut modeliyken yerel moda geçilirse liste başı (Small) değil,
+    # bu Mac için önerilen model seçili gelmeli
+    html = build_html(_config(translation_provider="openai", model="gpt-5.4-mini"),
+                      env=_env(default_local_model=STD))
+    assert f"const DEFAULT_LOCAL_MODEL = {json.dumps(STD)};" in html
+    assert "provider === 'local' ? DEFAULT_LOCAL_MODEL" in html
+
+
 def test_renders_without_env(build_html):
     # Eski çağrı biçimi (env yok) çökmemeli ve yerel seçeneği göstermemeli
     html = build_html(_config())

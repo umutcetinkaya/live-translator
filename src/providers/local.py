@@ -8,7 +8,9 @@ were tried first and kept getting weekdays, times and negations wrong in
 Turkish; see README, "Free mode".
 
 There is no slot for context: anything added to the text gets translated too,
-and would be spoken twice. Segments are whole sentences, which is enough.
+and would be spoken twice. Most segments are whole sentences; unpunctuated
+speech is cut into chunks of about 18 words, and those are translated without
+the previous chunk, so a sentence split across two can read less smoothly.
 
 The model is loaded once and kept in memory; generation is serialised because
 MLX models are not safe to drive from two threads at once.

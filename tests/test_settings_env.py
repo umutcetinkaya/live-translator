@@ -57,6 +57,14 @@ def test_8_gb_warns_on_standard_and_large(monkeypatch):
         "Needs 32 GB of memory, may be slow on this Mac"]
 
 
+def test_default_local_model_follows_memory(monkeypatch):
+    # Ayarlarda yerel moda geçen kullanıcıya bu Mac'e uygun model önerilmeli
+    _patch(monkeypatch, ram=32 * GB)
+    assert settings_env.build({}, voice_lister=_lister)["default_local_model"] == LOCAL_MODELS["standard"]
+    _patch(monkeypatch, ram=8 * GB)
+    assert settings_env.build({}, voice_lister=_lister)["default_local_model"] == LOCAL_MODELS["small"]
+
+
 def test_32_gb_no_warning(monkeypatch):
     _patch(monkeypatch, ram=32 * GB)
     env = settings_env.build({"target_lang": "tr"}, voice_lister=_lister)

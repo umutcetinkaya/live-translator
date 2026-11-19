@@ -501,6 +501,7 @@ let firstMsg = true;
 const MODELS = %(models_json)s;
 const CURRENT_MODEL = %(current_model_json)s;
 const MODEL_LABELS = %(model_labels_json)s;
+const DEFAULT_LOCAL_MODEL = %(default_local_model_json)s;
 const LOCAL_INFO = %(local_info_json)s;
 function updateLocalInfo() {
     const info = LOCAL_INFO[document.getElementById('modelSelect').value] || {status: '', warn: ''};
@@ -518,10 +519,15 @@ function populateModels() {
     const provider = document.getElementById('providerSelect').value;
     const sel = document.getElementById('modelSelect');
     sel.innerHTML = '';
-    (MODELS[provider] || []).forEach(function(m) {
+    const list = MODELS[provider] || [];
+    // A saved model from another provider would leave the first entry
+    // selected; for the free mode that is the least accurate model.
+    const want = list.indexOf(CURRENT_MODEL) >= 0 ? CURRENT_MODEL
+        : (provider === 'local' ? DEFAULT_LOCAL_MODEL : list[0]);
+    list.forEach(function(m) {
         const o = document.createElement('option');
         o.value = m; o.textContent = MODEL_LABELS[m] || m;
-        if (m === CURRENT_MODEL) o.selected = true;
+        if (m === want) o.selected = true;
         sel.appendChild(o);
     });
 }
@@ -759,6 +765,7 @@ initSettings();
         "models_json": json.dumps(MODELS),
         "model_labels_json": json.dumps(model_labels, ensure_ascii=False),
         "local_info_json": json.dumps(local_info, ensure_ascii=False),
+        "default_local_model_json": json.dumps(env.get("default_local_model", "")),
         "local_prov_option": local_prov_option,
         "system_voice_options": system_voice_options,
         "voice_hint": voice_hint,

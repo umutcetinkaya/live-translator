@@ -43,5 +43,6 @@ def build(config, voice_lister=None):
     return {
         "local_supported": local_models.is_supported(),
         "local_models": models,
+        "default_local_model": local_models.default_model(ram),
         "system_voices": voices,
     }
