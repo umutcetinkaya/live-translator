@@ -5,21 +5,23 @@
 <h1 align="center">Live Translator</h1>
 
 <p align="center">
-  <strong>Real-time system audio translation for macOS</strong><br>
-  Translate any audio playing on your Mac — YouTube, podcasts, meetings, movies — live on screen.
+  <strong>Free, private, real-time translation for any audio on your Mac.</strong><br>
+  YouTube, podcasts, meetings, movies: see the translation live on screen and hear it read aloud.<br>
+  No account. No API key. Everything runs on your Mac.
 </p>
 
 <p align="center">
   <a href="https://github.com/umutcetinkaya/live-translator/releases/latest"><img src="https://img.shields.io/github/v/release/umutcetinkaya/live-translator?style=flat-square&color=brightgreen" alt="Release"></a>
+  <img src="https://img.shields.io/badge/price-free-brightgreen?style=flat-square" alt="Free">
+  <img src="https://img.shields.io/badge/runs-on--device-blueviolet?style=flat-square" alt="On-device">
   <a href="https://github.com/umutcetinkaya/live-translator/stargazers"><img src="https://img.shields.io/github/stars/umutcetinkaya/live-translator?style=flat-square" alt="Stars"></a>
   <img src="https://img.shields.io/badge/macOS-13%2B-blue?style=flat-square" alt="macOS">
-  <img src="https://img.shields.io/badge/Python-3.11%2B-yellow?style=flat-square" alt="Python">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square" alt="License"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.1.0-macOS.dmg">
-    <img src="https://img.shields.io/badge/⬇_Download_DMG-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download" height="36">
+  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.0-macOS.dmg">
+    <img src="https://img.shields.io/badge/⬇_Download_for_Mac-free-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download" height="36">
   </a>
   &nbsp;&nbsp;
   <a href="https://buymeacoffee.com/umutcetinkaya">
@@ -27,19 +29,33 @@
   </a>
 </p>
 
+<p align="center">
+  <a href="WHATS-NEW.md"><strong>New in v0.2.0: completely free and on-device →</strong></a>
+</p>
+
 ---
+
+## Free. Private. Spoken.
+
+| | |
+|---|---|
+| 🆓 **Free** | No subscription, no account, no API key, no usage limits. Install it and it works. |
+| 🔒 **Private** | Translation and voice run on your Mac; nothing is sent to an AI company. Speech recognition runs on-device too, for every language whose dictation model is installed ([how](#on-device-speech-recognition)). |
+| 🔊 **Spoken** | Translations are read aloud with your Mac's own voices, so you can listen instead of read. |
+| ✈️ **Works offline** | After a one-time model download, no internet is needed for languages recognised on-device. |
+
+Want the big cloud models instead? Plug in your own OpenAI, Google Gemini or Anthropic key at any time. Free stays the default.
 
 ## Why?
 
-You're watching a YouTube video in Japanese. A podcast in Arabic. A meeting in German. You don't speak these languages — but you want to understand **everything**, **right now**.
+You're watching a YouTube video in Japanese. A podcast in Arabic. A meeting in German. You don't speak these languages, but you want to understand **everything**, **right now**.
 
-Live Translator sits quietly in your menu bar, captures whatever audio your Mac is playing, and shows you a live, flowing translation on screen. No copy-pasting, no tab switching, no waiting. Just play audio and read.
-
-It's not a word-by-word subtitler. It uses a **live document model** — the AI sees the full conversation, maintains context, and produces natural translations that read like a human wrote them.
+Live Translator sits quietly in your menu bar, captures whatever audio your Mac is playing, and shows a live, flowing translation on screen, read aloud if you like. No copy-pasting, no tab switching, no waiting. Just play audio.
 
 ```
-System Audio → Speech Recognition → AI Translation → Live Overlay
-(ScreenCaptureKit)  (SFSpeechRecognizer)  (your provider)  (WebKit Panel)
+System Audio  →  Speech Recognition  →  Translation              →  Overlay + Voice
+(ScreenCaptureKit) (Apple, on-device     (on your Mac, or your       (WebKit panel,
+                    where available)     own cloud provider)         macOS voices)
 ```
 
 ## Demo
@@ -58,38 +74,34 @@ System Audio → Speech Recognition → AI Translation → Live Overlay
 
 ## Features
 
-- **Free & on-device by default**: no account, no API key. Translation runs on a local AI model and is read aloud with your Mac's own voices. Audio and text never leave your Mac
+- **Free & on-device by default**: translation runs on [TranslateGemma](https://huggingface.co/collections/google/translategemma), Google's open translation model, right on your Mac
+- **Read aloud**: translations are spoken with free macOS voices; Piper, OpenAI and Gemini voices are available too
 - **Real-time translation** of any audio on your Mac
-- **11 source languages** — English, German, French, Spanish, Italian, Japanese, Chinese, Korean, Russian, Arabic, Portuguese
-- **12 target languages** — translate into any supported language
-- **Context-aware AI** — maintains full conversation context, never loses track
-- **Live document model** — translation grows like a live document, new parts highlighted
-- **Text-to-Speech**: hear translations read aloud (free system voices or Piper offline, OpenAI or Gemini voices)
-- **Multi-provider**: stay free on-device, or plug in OpenAI, Google Gemini, or Anthropic Claude with your own API key
-- **Latest AI models** — GPT-5.5, GPT-5.4 mini/nano, Gemini 2.5 / 3.5 Flash, Claude Haiku 4.5 / Sonnet 5 / Opus 5
-- **Bounded context** — a sliding window keeps cost and latency flat on long sessions instead of growing with the transcript
-- **Floating overlay** — dark-themed panel, draggable, always on top
-- **In-app settings** — provider, API keys, model, TTS, languages — all configurable from the UI
-- **No audio drivers needed** — uses ScreenCaptureKit (macOS 13+)
-- **On-device STT** (default) — speech recognition works without internet; audio never leaves your Mac
-- **Optional realtime mode** — lower latency via OpenAI's Realtime Translation model; audio is streamed to the provider
-- **Auto-recovery** — watchdog detects and recovers from stuck states
-- **Menu bar app** — runs quietly with 🌐 icon in menu bar
+- **11 source languages**: English, German, French, Spanish, Italian, Japanese, Chinese, Korean, Russian, Arabic, Portuguese
+- **12 target languages**: translate into any supported language
+- **Sentence by sentence**: each finished sentence is translated once and stays put, so long sessions stay fast
+- **Bring your own key (optional)**: OpenAI, Google Gemini or Anthropic Claude for cloud translation
+- **Floating overlay**: dark-themed panel, draggable, always on top, with live voice controls
+- **In-app settings**: provider, model, voice, languages, all from the UI
+- **No audio drivers needed**: uses ScreenCaptureKit (macOS 13+)
+- **Optional realtime mode**: lower latency via OpenAI's Realtime Translation model; audio is streamed to the provider
+- **Auto-recovery**: a watchdog detects and recovers from stuck states
+- **Menu bar app**: runs quietly with a 🌐 icon
 
-## What's New in v0.1.0
+## What's new in v0.2.0
 
-- **Multi-provider architecture** — pick OpenAI or Google Gemini for translation; switch any time from Settings.
-- **Latest models** — refreshed model list (OpenAI GPT-5.5 / 5.4 mini / 5.4 nano, Gemini 2.5 Flash / Flash-Lite, Gemini 3.5 Flash). The model dropdown updates to match the selected provider.
-- **Optional realtime mode** — stream audio to OpenAI's Realtime Translation model for lower latency, with a clear privacy warning. On-device STT stays the default.
-- **Dynamic system-audio capture** — audio sources opened *after* the app starts are now captured automatically.
-- **Redesigned Settings** — grouped sections, provider-aware fields, dual API keys, and clearer controls.
-- **More robust** — graceful fallback and clear messaging when a provider, key, or connection fails; "no audio detected" hint when the source is silent.
+- **Completely free out of the box.** No API key needed: translation runs on your Mac with TranslateGemma, and translations are read aloud with macOS voices.
+- **Picked for accuracy.** The on-device model was chosen by testing what usually goes wrong: weekdays, times, numbers and negations.
+- **Model matched to your Mac.** 8 GB, 16 GB and 32 GB Macs each get a model that fits, with an opt-in larger one for the best accuracy.
+- **Your settings are kept.** Already using an API key? Nothing changes until you switch.
+
+Read the full story in **[What's new](WHATS-NEW.md)**, or every change in the **[changelog](CHANGELOG.md)**.
 
 ## Install
 
 ### Option 1: DMG (Recommended)
 
-<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.1.0-macOS.dmg">
+<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.0-macOS.dmg">
   <img src="https://img.shields.io/badge/⬇_Download_DMG-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download DMG">
 </a>
 
@@ -98,6 +110,24 @@ System Audio → Speech Recognition → AI Translation → Live Overlay
 3. Pick **Free · On-device** (recommended), or enter your own [OpenAI](https://platform.openai.com) API key. [Gemini](https://aistudio.google.com/apikey) and [Anthropic](https://console.anthropic.com) keys can be added later in Settings
 4. Grant **Screen & System Audio Recording** permission when prompted
 5. Play any audio → translations appear live and are read aloud
+
+> **First launch:** If macOS blocks the app, right-click → Open, or run `xattr -cr /Applications/Live\ Translator.app`
+
+### Option 2: Homebrew
+
+```bash
+brew tap umutcetinkaya/tap
+brew install --cask live-translator
+```
+
+### Option 3: From Source
+
+```bash
+git clone https://github.com/umutcetinkaya/live-translator.git
+cd live-translator
+make install    # Create venv + install deps
+make run        # Launch
+```
 
 ## Free mode
 
@@ -118,42 +148,30 @@ TranslateGemma is released by Google under the [Gemma Terms of Use](https://ai.g
 
 Free mode needs **Apple Silicon (M1 or later) and macOS 14 or later**. On Intel Macs the setup wizard asks for an API key instead.
 
-**Better voices:** macOS ships a basic voice per language. For a much more natural one, open **System Settings › Accessibility › Spoken Content › System Voice › Manage Voices** and download an *Enhanced* or *Premium* voice for your target language. Live Translator picks the best installed voice automatically, or choose one in Settings.
+### On-device speech recognition
 
-> **First launch:** If macOS blocks the app, right-click → Open, or run `xattr -cr /Applications/Live\ Translator.app`
+Live Translator uses Apple's speech recognition and asks for it to run on-device whenever your Mac has the dictation model for that language. English usually does. For other languages, the model is downloaded when you add the language under **System Settings › Keyboard › Dictation**. Until then, Apple's speech service recognises that language over the internet, the same way Siri dictation does. Translation and voice stay on your Mac either way.
 
-### Option 2: Homebrew
+### Better voices
 
-```bash
-brew tap umutcetinkaya/tap
-brew install --cask live-translator
-```
-
-### Option 3: From Source
-
-```bash
-git clone https://github.com/umutcetinkaya/live-translator.git
-cd live-translator
-make install    # Create venv + install deps
-make models     # Download TTS voice models (~580MB)
-make run        # Launch
-```
+macOS ships a basic voice per language. For a much more natural one, open **System Settings › Accessibility › Spoken Content › System Voice › Manage Voices** and download an *Enhanced* or *Premium* voice for your target language. Live Translator picks the best installed voice automatically, or choose one in Settings.
 
 ## Quick Start
 
 1. Launch → floating panel appears + 🌐 in menu bar
-2. Click **⚙ Settings** → pick a provider and enter its API key
-3. Select **source language** (what's being spoken) and **target language** (what you want to read)
-4. Play any audio → translations appear in real-time
-5. New translations are **highlighted** so you always know what just changed
+2. Select the **source language** (what's being spoken) and the **target language** (what you want to read and hear)
+3. Play any audio → translations appear in real time and are read aloud
+4. The first time, wait for the translation model to download; the panel shows the progress
+5. Open **⚙ Settings** to change the model or voice, or to add your own API key
 
 ### Controls
 
 | Control | Action |
 |---------|--------|
 | Source / Target dropdowns | Change languages |
-| ⚙ Settings | API key, model, TTS provider, voice, speed |
-| TTS Off / On | Toggle text-to-speech |
+| 🔊 Voice, provider, volume | Live voice controls above the translation |
+| ⚙ Settings | Provider, model, voice, API keys |
+| TTS Off / On | Toggle text-to-speech (remembered between launches) |
 | Clear | Reset translation history |
 | ✕ | Quit |
 | Menu bar 🌐 | Pause, Show/Hide, Quit |
@@ -167,11 +185,11 @@ make run        # Launch
 | **OpenAI TTS** | Natural voices (Nova, Shimmer, Alloy, Echo, Fable, Onyx) | Costs money |
 | **Gemini TTS** | Natural voices via Gemini | Costs money |
 
-TTS plays through the same process — the app's own voice is automatically filtered from capture. No feedback loops.
+Spoken translations are loudness-normalised, and the source audio is turned down while they play. The app's own voice is filtered out of the capture, so there are no feedback loops.
 
-## Supported Models
+## Cloud providers (optional)
 
-Pick a provider in Settings, paste its API key, and the model list updates automatically.
+Prefer a cloud model? Pick a provider in Settings, paste its API key, and the model list updates automatically. You pay the provider directly; Live Translator itself stays free.
 
 **OpenAI**
 
@@ -197,28 +215,20 @@ Pick a provider in Settings, paste its API key, and the model list updates autom
 | Claude Sonnet 5 | 🚀 Fast | $$ | Higher quality |
 | Claude Opus 5 | 🐢 Moderate | $$$ | Maximum quality |
 
-> **Note:** Claude is text-translation only — Anthropic has no audio API, so realtime mode is unavailable when Claude is selected. On-device STT feeds it instead.
-
-> **Recommendation:** GPT-5.4 mini (OpenAI), Gemini 2.5 Flash (Google), or Claude Haiku 4.5 (Anthropic) for real-time translation — fast + cheap.
+> **Note:** Claude is text-translation only. Anthropic has no audio API, so realtime mode is unavailable when Claude is selected; on-device speech recognition feeds it instead.
 
 ## How It Works
 
-Live Translator runs two independent agents in parallel:
+Live Translator runs two independent workers in parallel:
 
-1. **Listener** — continuously captures system audio via ScreenCaptureKit and transcribes it on-device using SFSpeechRecognizer
-2. **Translator** — every ~3 seconds, sends a sliding window of the accumulated transcript to your chosen provider (OpenAI, Gemini, or Anthropic)
+1. **Listener**: captures system audio with ScreenCaptureKit and transcribes it on-device with SFSpeechRecognizer
+2. **Translator**: as soon as a sentence is finished, translates just that sentence and appends it. Speech without punctuation is cut into chunks of about 18 words, and a pause in speech flushes whatever is left
 
-The AI is instructed to **preserve its previous translation** and only **append or refine new content**. The overlay highlights what changed, so you can always follow along.
-
-This means:
-- Context is never lost
-- Incomplete sentences get refined next cycle
-- The translation reads as a coherent, flowing document
-- No disconnected fragments
+Each piece is translated once and then frozen, so a long session never re-sends the whole transcript and the translation never gets truncated. Cloud providers also receive the previous two sentences as read-only context, to resolve pronouns and terminology. The newest translation is highlighted, and with speech on it is read aloud.
 
 ### Realtime mode (optional)
 
-By default, speech recognition runs **on-device** — your audio never leaves the Mac, only text is sent to the translation provider. For lower latency you can enable **Realtime mode** in Settings (OpenAI provider), which streams audio directly to OpenAI's Realtime Translation model and returns the translation as it speaks. This trades privacy for speed: **audio is sent to the provider**. A warning is shown in Settings when you enable it. On-device mode remains the default.
+By default, audio is recognised with Apple's speech recognition (on-device where available) and only text reaches the translator. For lower latency with a cloud provider you can enable **Realtime mode** in Settings (OpenAI), which streams audio directly to OpenAI's Realtime Translation model and returns the translation as it speaks. This trades privacy for speed: **audio is sent to the provider**. A warning is shown in Settings when you enable it.
 
 ## Architecture
 
@@ -227,24 +237,28 @@ live-translator/
 ├── main.py                      # Entry point + menu bar
 ├── src/
 │   ├── audio_capture.py         # ScreenCaptureKit system audio
-│   ├── speech_recognizer.py     # SFSpeechRecognizer + watchdog + ring buffer
-│   ├── translator.py            # Live document translation + sliding window
-│   ├── providers/               # openai · gemini · claude · piper
+│   ├── speech_recognizer.py     # SFSpeechRecognizer + watchdog
+│   ├── segmenter.py             # Decides when a sentence is finished
+│   ├── translator.py            # Sentence-by-sentence translation
+│   ├── providers/               # local (MLX) · openai · gemini · claude
+│   │                            # system voice · piper · realtime
+│   ├── local_models.py          # On-device model tiers
+│   ├── model_store.py           # Model download + progress
 │   ├── pipeline.py              # Listener + Translator orchestrator
 │   ├── overlay.py               # WebKit floating panel (HTML/CSS/JS)
-│   ├── tts.py                   # Piper (offline) / OpenAI TTS
+│   ├── tts.py                   # Speech queue, normalisation, ducking
 │   └── config.py                # JSON settings
-├── models/                      # Piper voice models (downloaded separately)
 ├── scripts/
 │   ├── build_app.sh             # Build .app bundle
 │   ├── build_dmg.sh             # Create DMG installer
-│   ├── download_models.sh       # Download TTS models
+│   ├── bench_local_models.py    # Compare on-device models
 │   ├── notarize.sh              # Apple notarization
 │   ├── setup_wizard.swift       # Native macOS setup wizard
 │   └── launcher.c               # Native .app launcher
+├── tests/                       # pytest suite
 ├── assets/                      # App icon + demo media
-├── Makefile
-├── requirements.txt
+├── CHANGELOG.md
+├── WHATS-NEW.md
 ├── CONTRIBUTING.md
 ├── SECURITY.md
 └── LICENSE
@@ -252,25 +266,25 @@ live-translator/
 
 ## Configuration
 
-Settings are stored in `~/.live-translator.json` and can be changed from the in-app Settings panel:
+Settings are stored in `~/.live-translator.json` and can be changed from the in-app Settings panel. A fresh install looks like this:
 
 ```json
 {
-  "translation_provider": "openai",
-  "openai_api_key": "sk-...",
-  "gemini_api_key": "",
-  "anthropic_api_key": "",
+  "translation_provider": "local",
+  "model": "mlx-community/translategemma-4b-it-8bit",
   "source_locale": "en-US",
   "target_lang": "tr",
-  "model": "gpt-5.4-mini",
-  "tts_provider": "piper",
-  "tts_voice": "nova",
+  "tts_provider": "system",
+  "tts_enabled": true,
   "tts_speed": 1.0,
-  "context_window_words": 1200
+  "realtime_mode": false,
+  "openai_api_key": "",
+  "gemini_api_key": "",
+  "anthropic_api_key": ""
 }
 ```
 
-`context_window_words` caps how much transcript is sent per translation cycle. The previous translation carries earlier context forward, so raising it buys little; lowering it cuts cost and latency further.
+Downloaded models live in `~/Library/Application Support/LiveTranslator/models`.
 
 ## Troubleshooting
 
@@ -281,9 +295,10 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
 | STT stops working | Built-in watchdog auto-recovers within 10 seconds |
 | Translation not appearing | Free mode: wait for the model download shown in the panel. Cloud providers: check the API key in Settings |
 | Model download fails | Check your internet connection and free disk space (up to 4.2 GB, or 6.7 GB for the large model), then press Save in Settings to retry |
-| Realtime toggle greyed out | Only OpenAI supports realtime — Anthropic has no audio API |
+| First launch after updating is slow | The app installs its new components once; this can take about a minute |
+| Realtime toggle greyed out | Only OpenAI supports realtime; Anthropic has no audio API |
 | TTS not working | Check TTS provider in Settings; with System voice, make sure a voice for your target language is installed |
-| App not in dock | By design — it's a menu bar app (🌐) |
+| App not in dock | By design: it's a menu bar app (🌐) |
 
 ## Requirements
 
@@ -295,7 +310,7 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
 ---
 
 <p align="center">
-  <strong>If Live Translator helps you, give it a ⭐ on GitHub — it helps others find it!</strong>
+  <strong>If Live Translator helps you, give it a ⭐ on GitHub. It helps others find it!</strong>
 </p>
 
 <p align="center">
@@ -314,14 +329,17 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
 
 Copyright © 2025 [Umut Çetinkaya](https://umutcetinkaya.com)
 
 ## Credits
 
-- [ScreenCaptureKit](https://developer.apple.com/documentation/screencapturekit) — macOS audio capture
-- [SFSpeechRecognizer](https://developer.apple.com/documentation/speech) — on-device speech recognition
-- [OpenAI API](https://platform.openai.com) — AI translation
-- [Piper TTS](https://github.com/rhasspy/piper) — offline text-to-speech
-- [PyObjC](https://pyobjc.readthedocs.io) — Python ↔ macOS bridge
+- [TranslateGemma](https://huggingface.co/collections/google/translategemma) by Google: on-device translation model ([Gemma Terms of Use](https://ai.google.dev/gemma/terms))
+- [MLX](https://github.com/ml-explore/mlx) and [mlx-lm](https://github.com/ml-explore/mlx-lm) by Apple: running the model on Apple Silicon
+- [ScreenCaptureKit](https://developer.apple.com/documentation/screencapturekit): macOS audio capture
+- [SFSpeechRecognizer](https://developer.apple.com/documentation/speech): on-device speech recognition
+- [AVSpeechSynthesizer](https://developer.apple.com/documentation/avfaudio/avspeechsynthesizer): macOS system voices
+- [Piper TTS](https://github.com/rhasspy/piper): offline text-to-speech
+- [OpenAI](https://platform.openai.com), [Google Gemini](https://ai.google.dev) and [Anthropic](https://www.anthropic.com) APIs: optional cloud translation
+- [PyObjC](https://pyobjc.readthedocs.io): Python ↔ macOS bridge
