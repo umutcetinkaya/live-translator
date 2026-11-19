@@ -208,7 +208,7 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
         cv.addSubview(greenBtn(NSRect(x: 70, y: H-310, width: W-140, height: 46),
                                "Free · On-device (recommended)", action: #selector(onFree)))
         cv.addSubview(lbl(NSRect(x: 50, y: H-352, width: W-100, height: 34),
-                          "No account, no API key. One-time download of \(modelSizeText()).\nAudio and text never leave your Mac.",
+                          "No account, no API key. One-time download of \(modelSizeText()).\nTranslation and voice run on your Mac.",
                           size: 11, weight: .regular, color: NSColor(white: 0.45, alpha: 1)))
 
         cv.addSubview(ghostBtn(NSRect(x: (W-260)/2, y: 70, width: 260, height: 30),

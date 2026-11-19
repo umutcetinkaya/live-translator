@@ -431,7 +431,7 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
             <div id="localModelRow">
                 <div id="localModelStatus" style="font-size:11px;margin-top:6px;color:rgba(255,255,255,0.6);"></div>
                 <div id="localModelWarn" style="font-size:11px;margin-top:4px;color:#e0a000;"></div>
-                <div style="font-size:11px;margin-top:4px;color:rgba(255,255,255,0.45);">Free, runs on this Mac. Audio and text never leave it.</div>
+                <div style="font-size:11px;margin-top:4px;color:rgba(255,255,255,0.45);">Free, runs on this Mac. Nothing is sent to an AI service.</div>
                 <button id="deleteModelBtn" class="btn-cancel" style="margin-top:8px;padding:6px 12px;font-size:11px;" onclick="deleteLocalModel()">Delete model</button>
             </div>
         </div>
