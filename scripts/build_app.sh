@@ -139,11 +139,11 @@ cc -O2 -o "${APP_DIR}/Contents/MacOS/launcher" "${PROJECT_DIR}/scripts/launcher.
 SIGN_ID="${SIGN_ID:-Developer ID Application: Umut Cetinkaya (BD927P383Y)}"
 
 # Sign binaries individually (inside out)
-codesign --force --options runtime --sign "${SIGN_ID}" "${APP_DIR}/Contents/Resources/scripts/setup_wizard" 2>/dev/null
-codesign --force --options runtime --sign "${SIGN_ID}" "${APP_DIR}/Contents/MacOS/launcher" 2>/dev/null
+codesign --force --options runtime --timestamp --sign "${SIGN_ID}" "${APP_DIR}/Contents/Resources/scripts/setup_wizard" 2>/dev/null
+codesign --force --options runtime --timestamp --sign "${SIGN_ID}" "${APP_DIR}/Contents/MacOS/launcher" 2>/dev/null
 
 # Sign the bundle
-codesign --force --options runtime --sign "${SIGN_ID}" "${APP_DIR}" 2>/dev/null && \
+codesign --force --options runtime --timestamp --sign "${SIGN_ID}" "${APP_DIR}" 2>/dev/null && \
     echo "  Code signed: ${SIGN_ID}" || \
     echo "  WARNING: signing failed"
 
