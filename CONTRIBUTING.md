@@ -32,12 +32,24 @@ make build
 ```
 
 ### Notarization (maintainers only)
+
+Store the credentials once in the macOS keychain. notarytool asks for an
+app-specific password (create one at account.apple.com); it is never written
+to the repository or passed on the command line.
+
 ```bash
-export APPLE_ID=your@email.com
-export APP_PASSWORD=xxxx-xxxx-xxxx-xxxx  # App-specific password from appleid.apple.com
-export TEAM_ID=YOUR_TEAM_ID
-bash scripts/notarize.sh dist/LiveTranslator-v0.0.1-macOS.dmg
+xcrun notarytool store-credentials "livetranslator-notary" \
+    --apple-id your@email.com --team-id YOUR_TEAM_ID
 ```
+
+Then build, sign, notarize and staple in one step:
+
+```bash
+make notarize VERSION=x.y.z
+```
+
+Build releases from a clean checkout of the release tag, so nothing from your
+working copy ends up in the DMG.
 
 ## Project Structure
 

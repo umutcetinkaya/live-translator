@@ -1,6 +1,6 @@
 VERSION ?= 0.2.0
 
-.PHONY: install run build dmg models clean
+.PHONY: install run build dmg notarize models clean
 
 install:
 	@echo "=== Installing Live Translator ==="
@@ -19,6 +19,9 @@ build:
 
 dmg: build
 	@bash scripts/build_dmg.sh $(VERSION)
+
+notarize: dmg
+	@bash scripts/notarize.sh dist/LiveTranslator-v$(VERSION)-macOS.dmg
 
 clean:
 	rm -rf build dist

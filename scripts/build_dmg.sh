@@ -75,5 +75,11 @@ hdiutil convert "dist/${DMG_NAME}-temp.dmg" \
 rm -f "dist/${DMG_NAME}-temp.dmg"
 rm -rf "${DMG_DIR}"
 
+# Sign the disk image too, so Gatekeeper can check it before it is opened.
+SIGN_ID="${SIGN_ID:-Developer ID Application: Umut Cetinkaya (BD927P383Y)}"
+codesign --force --timestamp --sign "${SIGN_ID}" "dist/${DMG_NAME}.dmg" \
+    && echo "  DMG signed: ${SIGN_ID}" \
+    || echo "  WARNING: DMG signing failed"
+
 echo "=== Created: dist/${DMG_NAME}.dmg ==="
 echo "    Size: $(du -h "dist/${DMG_NAME}.dmg" | cut -f1)"
