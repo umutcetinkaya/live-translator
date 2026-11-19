@@ -195,25 +195,27 @@ Prefer a cloud model? Pick a provider in Settings, paste its API key, and the mo
 
 | Model | Speed | Cost | Best For |
 |-------|-------|------|----------|
-| GPT-5.4 mini | ⚡ Fastest | ¢ | Daily use (default) |
-| GPT-5.4 nano | ⚡ Fastest | ¢ | Budget |
-| GPT-5.5 | 🚀 Fast | $$ | Latest + Quality |
+| GPT-6 Luna | ⚡ Fastest | ¢ | Daily use (default) |
+| GPT-6.1 Terra | ⚡ Fast | $ | Balanced |
+| GPT-6.2 Sol | 🚀 Fast | $$ | Higher quality |
 
 **Google Gemini**
 
 | Model | Speed | Cost | Best For |
 |-------|-------|------|----------|
-| Gemini 2.5 Flash | ⚡ Fastest | ¢ | Daily use |
-| Gemini 2.5 Flash-Lite | ⚡ Fastest | ¢ | Budget |
-| Gemini 3.5 Flash | 🚀 Fast | $$ | Latest + Quality |
+| Gemini 3.5 Flash-Lite | ⚡ Fastest | ¢ | Daily use (default) |
+| Gemini 3.6 Flash | ⚡ Fast | $ | Balanced |
+| Gemini 3.8 Flash | 🚀 Fast | $$ | Higher quality |
 
 **Anthropic Claude**
 
 | Model | Speed | Cost | Best For |
 |-------|-------|------|----------|
-| Claude Haiku 4.5 | ⚡ Fastest | ¢ | Daily use (default) |
-| Claude Sonnet 5 | 🚀 Fast | $$ | Higher quality |
-| Claude Opus 5 | 🐢 Moderate | $$$ | Maximum quality |
+| Claude Haiku 5.5 | ⚡ Fastest | ¢ | Daily use (default) |
+| Claude Sonnet 5.5 | 🚀 Fast | $$ | Higher quality |
+| Claude Opus 5.5 | 🐢 Moderate | $$$ | Maximum quality |
+
+> **Upgrading:** if you had picked a model that has since been retired or replaced (for example Gemini 2.5 Flash, which Google shuts down on December 1, 2026), Live Translator moves you to its successor in the same tier automatically.
 
 > **Note:** Claude is text-translation only. Anthropic has no audio API, so realtime mode is unavailable when Claude is selected; on-device speech recognition feeds it instead.
 

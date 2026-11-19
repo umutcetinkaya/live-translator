@@ -301,7 +301,7 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
         // voices (available on every Mac), so no voice models are downloaded.
         writeConfig([
             "translation_provider": "openai", "openai_api_key": key,
-            "source_locale": "en-US", "target_lang": "tr", "model": "gpt-5.4-mini",
+            "source_locale": "en-US", "target_lang": "tr", "model": "gpt-6-luna",
             "tts_provider": "system", "tts_enabled": true, "tts_voice": "nova", "tts_speed": 1.0,
         ])
         showStep2()

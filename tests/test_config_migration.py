@@ -45,7 +45,7 @@ def test_unsupported_mac_fresh_install_falls_back(cfg_file, monkeypatch):
     monkeypatch.setattr(local_models, "is_supported", lambda *a, **k: False)
     c = config.load_config()
     assert c["translation_provider"] == "openai"
-    assert c["model"] == "gpt-5.4-mini"
+    assert c["model"] == "gpt-6-luna"
     assert c["tts_provider"] == "piper"
 
 

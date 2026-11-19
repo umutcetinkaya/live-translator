@@ -16,7 +16,7 @@ DEFAULTS = {
     "source_lang": "en",
     "source_locale": "en-US",
     "target_lang": "tr",
-    "model": "gpt-5.4-mini",
+    "model": "gpt-6-luna",
     "tts_provider": "piper",
     "tts_voice": "nova",
     "tts_speed": 1.0,
@@ -26,9 +26,26 @@ DEFAULTS = {
 
 MODELS = {
     "local": [LOCAL_MODELS["small"], LOCAL_MODELS["standard"], LOCAL_MODELS["large"]],
-    "openai": ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5.5"],
-    "gemini": ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash"],
-    "claude": ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
+    # First entry is the default: fast and cheap, which suits live subtitles.
+    "openai": ["gpt-6-luna", "gpt-6.1-terra", "gpt-6.2-sol"],
+    "gemini": ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"],
+    "claude": ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"],
+}
+
+
+# Models dropped from the lists, mapped to the successor each provider
+# recommends, so an update keeps the tier the user picked instead of
+# dropping them to the cheapest model.
+MODEL_SUCCESSORS = {
+    "claude-haiku-4-5": "claude-haiku-5-5",
+    "claude-sonnet-5": "claude-sonnet-5-5",
+    "claude-opus-5": "claude-opus-5-5",
+    "gpt-5.4-nano": "gpt-6-luna",
+    "gpt-5.4-mini": "gpt-6.1-terra",
+    "gpt-5.5": "gpt-6.2-sol",
+    "gemini-2.5-flash": "gemini-3.5-flash-lite",
+    "gemini-2.5-flash-lite": "gemini-3.5-flash-lite",
+    "gemini-3.5-flash": "gemini-3.6-flash",
 }
 
 
@@ -37,6 +54,8 @@ def normalize_model(model, provider):
     valid = MODELS.get(provider, [])
     if model in valid:
         return model
+    if MODEL_SUCCESSORS.get(model) in valid:
+        return MODEL_SUCCESSORS[model]
     if provider == "local":
         # The default local model depends on this Mac's memory.
         return local_models.default_model()

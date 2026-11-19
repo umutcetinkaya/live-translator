@@ -12,6 +12,23 @@ Keep your previous translation EXACTLY as is, append the translation of new
 content, and fix only the last incomplete sentence. Output the FULL {target_lang}
 document. Natural flowing {target_lang}. No commentary."""
 
+# Lowest thinking level each model accepts. Gemini 3.x thinks by default,
+# which only adds delay to a subtitle; 3.8 Flash goes no lower than "low".
+_THINKING_LEVEL = {
+    "gemini-3.5-flash-lite": "minimal",
+    "gemini-3.6-flash": "minimal",
+    "gemini-3.8-flash": "low",
+}
+
+
+def _generation_config(model):
+    level = _THINKING_LEVEL.get(model)
+    if level is None:
+        return None
+    from google.genai import types
+    return types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_level=level))
+
 
 class GeminiTranslationProvider(TranslationProvider):
     def __init__(self, client):
@@ -25,8 +42,8 @@ class GeminiTranslationProvider(TranslationProvider):
         prompt = (f"{SEGMENT_SYSTEM_PROMPT}\n\n"
                   + build_segment_prompt(segment, context, target_lang))
         try:
-            resp = self._client.models.generate_content(model=model,
-                                                        contents=prompt)
+            resp = self._client.models.generate_content(
+                model=model, contents=prompt, config=_generation_config(model))
             return (resp.text or "").strip()
         except Exception as e:
             raise ProviderError(f"Gemini translation error: {e}") from e
@@ -50,7 +67,7 @@ class GeminiTranslationProvider(TranslationProvider):
 
 
 _TTS_RATE = 24000
-_TTS_MODEL = "gemini-2.5-flash-preview-tts"
+_TTS_MODEL = "gemini-3.8-flash-lite-tts"
 
 
 class GeminiTTSProvider(TTSProvider):

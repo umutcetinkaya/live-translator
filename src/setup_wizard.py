@@ -162,7 +162,7 @@ class SetupWizard:
             "openai_api_key": key,
             "source_locale": "en-US",
             "target_lang": "tr",
-            "model": "gpt-4o-mini",
+            "model": "gpt-6-luna",
             "tts_provider": "piper",
             "tts_voice": "nova",
             "tts_speed": 1.0,

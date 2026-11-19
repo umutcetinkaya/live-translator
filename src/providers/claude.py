@@ -41,15 +41,17 @@ Rules:
 # session. 4096 truncated long translations mid-sentence.
 MAX_TOKENS = 16000
 
-# Per-model tuning. Adaptive thinking is on by default on Sonnet 5 and Opus 5
-# and costs latency in a sub-second subtitle loop, so it is disabled; Haiku 4.5
-# has no thinking to disable and rejects the parameter. Effort is only accepted
-# by the models that reason, and `low` is the right setting here — translation
-# is not a reasoning task, and lower effort means fewer tokens and less delay.
+# Per-model tuning. Thinking costs latency in a sub-second subtitle loop, so
+# it is turned off wherever the model allows it:
+# - Haiku 5.5 accepts {"type": "disabled"} at its default effort.
+# - Sonnet 5.5 rejects "disabled"; {"type": "between_tools"} is its off switch.
+# - Opus 5.5 cannot turn thinking off; low effort is the only lever.
+# Effort is not sent otherwise: on Sonnet 5 a low effort measured slower
+# (2.19 s -> 3.49 s per segment) with thinking already off.
 _MODEL_TUNING = {
-    "claude-haiku-4-5": {},
-    "claude-sonnet-5": {"thinking": {"type": "disabled"}},
-    "claude-opus-5": {"thinking": {"type": "disabled"}},
+    "claude-haiku-5-5": {"thinking": {"type": "disabled"}},
+    "claude-sonnet-5-5": {"thinking": {"type": "between_tools"}},
+    "claude-opus-5-5": {"output_config": {"effort": "low"}},
 }
 
 

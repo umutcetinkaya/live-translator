@@ -15,7 +15,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "src"))
 
-from config import SOURCE_LANGUAGES, TARGET_LANGUAGES, MODELS, OVERLAY_OPACITY
+from config import SOURCE_LANGUAGES, TARGET_LANGUAGES, MODELS, OVERLAY_OPACITY, normalize_model
 
 _OVERLAY_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "src", "overlay.py"
@@ -33,6 +33,7 @@ def _load_build_html():
         "SOURCE_LANGUAGES": SOURCE_LANGUAGES,
         "TARGET_LANGUAGES": TARGET_LANGUAGES,
         "MODELS": MODELS,
+        "normalize_model": normalize_model,
         "OVERLAY_OPACITY": OVERLAY_OPACITY,
     }
     exec(compile(ast.Module(body=fns, type_ignores=[]), "<overlay>", "exec"), ns)
@@ -80,8 +81,8 @@ def test_anthropic_key_rendered(build_html):
 def test_claude_models_reach_the_dropdown(build_html):
     """Model listesi JSON olarak gömülür; claude modelleri içinde olmalı."""
     html = build_html(_config())
-    assert "claude-haiku-4-5" in html
-    assert "claude-opus-5" in html
+    assert "claude-haiku-5-5" in html
+    assert "claude-opus-5-5" in html
 
 
 def test_claude_realtime_hint_explains_why(build_html):

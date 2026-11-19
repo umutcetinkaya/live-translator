@@ -14,17 +14,17 @@ def test_default_provider_is_free_when_supported(monkeypatch):
 
 def test_models_per_provider():
     assert "openai" in MODELS and "gemini" in MODELS
-    assert "gpt-5.4-mini" in MODELS["openai"]
-    assert "gemini-2.5-flash" in MODELS["gemini"]
+    assert "gpt-6-luna" in MODELS["openai"]
+    assert "gemini-3.5-flash-lite" in MODELS["gemini"]
 
 def test_legacy_model_normalized():
-    assert normalize_model("o1", "openai") == "gpt-5.4-mini"
-    assert normalize_model("gpt-5.4-mini", "openai") == "gpt-5.4-mini"
-    assert normalize_model("gemini-2.5-flash", "gemini") == "gemini-2.5-flash"
+    assert normalize_model("o1", "openai") == "gpt-6-luna"
+    assert normalize_model("gpt-6.2-sol", "openai") == "gpt-6.2-sol"
+    assert normalize_model("gemini-3.6-flash", "gemini") == "gemini-3.6-flash"
 
 def test_claude_models_listed():
     assert MODELS["claude"] == [
-        "claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5",
+        "claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5",
     ]
 
 def test_claude_default_key_present():
@@ -32,8 +32,8 @@ def test_claude_default_key_present():
 
 def test_normalize_model_claude_fallback():
     # Geçersiz model claude varsayılanına düşmeli
-    assert normalize_model("gpt-5.5", "claude") == "claude-haiku-4-5"
-    assert normalize_model("claude-sonnet-5", "claude") == "claude-sonnet-5"
+    assert normalize_model("gpt-5.5", "claude") == "claude-haiku-5-5"
+    assert normalize_model("claude-sonnet-5-5", "claude") == "claude-sonnet-5-5"
 
 
 def test_local_models_listed():
