@@ -24,6 +24,7 @@ from config import (
     OVERLAY_OPACITY, SOURCE_LANGUAGES, TARGET_LANGUAGES, MODELS, normalize_model,
     load_config, save_config,
 )
+from providers.openai import REALTIME_VOICES, realtime_voice
 
 SCREEN_SAVER_LEVEL = 1000
 WIDTH = 460
@@ -61,6 +62,14 @@ def _build_html(config, env=None):
     provider = config.get("translation_provider", "openai")
     tts_provider = config.get("tts_provider", "piper")
     tts_speed = config.get("tts_speed", 1.0)
+    # OpenAI voices come from the Realtime API; a saved Speech API voice
+    # (e.g. "nova") shows as the voice it is mapped to.
+    chosen_openai = realtime_voice(config.get("tts_voice", ""))
+    openai_voice_options = "".join(
+        '<option value="%s"%s>%s</option>' % (
+            v, " selected" if v == chosen_openai else "",
+            v.capitalize() + (" (recommended)" if v in ("marin", "cedar") else ""))
+        for v in REALTIME_VOICES)
 
     local_prov_option = ""
     if env.get("local_supported"):
@@ -456,12 +465,7 @@ body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radiu
             <div id="openaiVoiceRow">
                 <label>OpenAI voice</label>
                 <select id="ttsVoice">
-                    <option value="nova" %(voice_nova)s>Nova — female, warm</option>
-                    <option value="shimmer" %(voice_shimmer)s>Shimmer — female, soft</option>
-                    <option value="alloy" %(voice_alloy)s>Alloy — neutral</option>
-                    <option value="echo" %(voice_echo)s>Echo — male, deep</option>
-                    <option value="fable" %(voice_fable)s>Fable — male, narrator</option>
-                    <option value="onyx" %(voice_onyx)s>Onyx — male, strong</option>
+                    %(openai_voice_options)s
                 </select>
             </div>
             <label>Speed — <span id="speedVal">%(tts_speed)sx</span></label>
@@ -756,12 +760,7 @@ initSettings();
         "openai_tts_sel": "selected" if tts_provider == "openai" else "",
         "gemini_tts_sel": "selected" if tts_provider == "gemini" else "",
         "tts_speed": tts_speed,
-        "voice_nova": "selected" if config.get("tts_voice") == "nova" else "",
-        "voice_shimmer": "selected" if config.get("tts_voice") == "shimmer" else "",
-        "voice_alloy": "selected" if config.get("tts_voice", "nova") == "alloy" else "",
-        "voice_echo": "selected" if config.get("tts_voice") == "echo" else "",
-        "voice_fable": "selected" if config.get("tts_voice") == "fable" else "",
-        "voice_onyx": "selected" if config.get("tts_voice") == "onyx" else "",
+        "openai_voice_options": openai_voice_options,
         "models_json": json.dumps(MODELS),
         "model_labels_json": json.dumps(model_labels, ensure_ascii=False),
         "local_info_json": json.dumps(local_info, ensure_ascii=False),
@@ -811,7 +810,7 @@ class _NavDelegate(NSObject):
                 params.get("model", "gpt-6-luna"),
                 params.get("ttsProvider", "piper"),
                 params.get("ttsSpeed", "1.0"),
-                params.get("ttsVoice", "nova"),
+                params.get("ttsVoice", "marin"),
                 params.get("realtime", "0"),
                 params.get("systemVoice", ""),
             )
@@ -927,7 +926,7 @@ class TranslationOverlay:
 
     def _save_settings(self, provider, openai_key, gemini_key, anthropic_key,
                        model, tts_provider="piper", tts_speed="1.0",
-                       tts_voice="nova", realtime="0", system_voice=""):
+                       tts_voice="marin", realtime="0", system_voice=""):
         self._config["translation_provider"] = provider
         self._config["openai_api_key"] = openai_key
         self._config["gemini_api_key"] = gemini_key

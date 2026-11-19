@@ -7,6 +7,14 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- OpenAI voices now run on the Realtime API with `gpt-realtime-2.1-mini`. OpenAI shuts down the previous speech models (`tts-1`, `gpt-4o-mini-tts`) on January 6, 2027. The voice list in Settings follows the Realtime voices, with Marin and Cedar first; a saved voice that no longer exists moves to its closest match (Nova to Marin, Onyx to Cedar, Fable to Verse).
+
+### Fixed
+
+- Gemini voices received the OpenAI voice name from the shared voice setting; Gemini now falls back to its own default voice.
+
 ## [0.2.1] - 2026-11-19
 
 ### Changed

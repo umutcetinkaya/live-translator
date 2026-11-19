@@ -302,7 +302,7 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
         writeConfig([
             "translation_provider": "openai", "openai_api_key": key,
             "source_locale": "en-US", "target_lang": "tr", "model": "gpt-6-luna",
-            "tts_provider": "system", "tts_enabled": true, "tts_voice": "nova", "tts_speed": 1.0,
+            "tts_provider": "system", "tts_enabled": true, "tts_voice": "marin", "tts_speed": 1.0,
         ])
         showStep2()
     }
