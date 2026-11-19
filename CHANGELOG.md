@@ -37,6 +37,7 @@ Live Translator is now free: translation and speech run on the Mac, with no acco
 
 ### Fixed
 
+- Setup wizard text was cut off on the last step and on the error screen.
 - Translation never triggered on unpunctuated speech recognition output.
 - Half sentences produced meaningless translations.
 - Translations only appeared once the speaker paused.
