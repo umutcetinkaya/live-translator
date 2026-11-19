@@ -38,12 +38,13 @@ def test_normalize_model_claude_fallback():
 
 def test_local_models_listed():
     from local_models import LOCAL_MODELS
-    assert MODELS["local"] == [LOCAL_MODELS["standard"], LOCAL_MODELS["small"]]
+    assert MODELS["local"] == [LOCAL_MODELS["small"], LOCAL_MODELS["standard"], LOCAL_MODELS["large"]]
 
 def test_normalize_model_local_falls_back_to_ram_default(monkeypatch):
-    # Geçersiz model, bu Mac'in RAM'ine uygun modele düşmeli (8 GB'da küçük model)
-    import config, local_models
+    # Geçersiz ya da eski (ör. Qwen) model bu Mac'e uygun modele düşmeli, seçili büyük model korunmalı
+    import local_models
     monkeypatch.setattr(local_models, "total_ram_bytes", lambda: 8 * 1024 ** 3)
-    assert normalize_model("gpt-5.5", "local") == local_models.LOCAL_MODELS["small"]
-    assert normalize_model(local_models.LOCAL_MODELS["standard"], "local") == \
-        local_models.LOCAL_MODELS["standard"]
+    assert normalize_model("mlx-community/Qwen3-4B-Instruct-2507-4bit", "local") == \
+        local_models.LOCAL_MODELS["small"]
+    assert normalize_model(local_models.LOCAL_MODELS["large"], "local") == \
+        local_models.LOCAL_MODELS["large"]

@@ -8,8 +8,11 @@ mode can run here at all, and which system voices speak the target language.
 import local_models
 import model_store
 
-_LABELS = {"standard": "Standard (better)", "small": "Small (faster)"}
-_SIZES = {"standard": "2.3 GB", "small": "1.0 GB"}
+_TIERS = ("small", "standard", "large")
+_LABELS = {"small": "Small (less accurate)", "standard": "Standard",
+           "large": "Large (most accurate)"}
+_SIZES = {"small": "2.2 GB", "standard": "4.2 GB", "large": "6.7 GB"}
+_NEEDS = {"standard": "16 GB", "large": "32 GB"}
 
 
 def _gb(n):
@@ -17,16 +20,17 @@ def _gb(n):
 
 
 def build(config, voice_lister=None):
-    low_ram = local_models.pick_tier(local_models.total_ram_bytes()) == "small"
+    ram = local_models.total_ram_bytes()
     models = []
-    for tier in ("standard", "small"):
+    for tier in _TIERS:
         repo = local_models.LOCAL_MODELS[tier]
         ready = model_store.is_ready(repo)
+        slow = local_models.slow_on_this_mac(repo, ram)
         models.append({
             "id": repo,
             "label": f"{_LABELS[tier]} · {_SIZES[tier]}",
             "status": f"Ready · {_gb(model_store.size_on_disk(repo))}" if ready else "Not downloaded",
-            "warn": "May be slow on this Mac" if (tier == "standard" and low_ram) else "",
+            "warn": f"Needs {_NEEDS[tier]} of memory, may be slow on this Mac" if slow else "",
         })
 
     try:

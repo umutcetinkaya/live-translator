@@ -253,11 +253,11 @@ def test_model_switch_during_download_fetches_new_model(monkeypatch):
     monkeypatch.setattr(model_store, "download", finish)
     p.ensure_local_model()
     first = p._download_thread
-    p.update_config(dict(LOCAL_CFG, model=LOCAL_MODELS["small"]))  # indirme sürerken model değişti
+    p.update_config(dict(LOCAL_CFG, model=LOCAL_MODELS["large"]))  # indirme sürerken model değişti
     dl.gate.set()
     first.join(5)
     p._download_thread.join(5)
-    assert dl.calls == [LOCAL_MODELS["standard"], LOCAL_MODELS["small"]]
+    assert dl.calls == [LOCAL_MODELS["standard"], LOCAL_MODELS["large"]]
 
 
 def test_unsupported_mac_never_downloads(monkeypatch):

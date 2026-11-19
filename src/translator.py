@@ -11,7 +11,7 @@ read-only context.
 
 import threading
 import time
-from config import load_config, normalize_model
+from config import load_config, normalize_model, LANGUAGE_NAMES
 from providers import get_translation_provider
 from providers.base import ProviderError
 from segmenter import split_sentences, stable_prefix, flush_prefix
@@ -87,12 +87,7 @@ class AITranslator:
             self._committed_source = ""
 
     def _lang_name(self):
-        names = {
-            "tr": "Turkish", "en": "English", "de": "German", "fr": "French",
-            "es": "Spanish", "it": "Italian", "ja": "Japanese", "zh": "Chinese",
-            "ko": "Korean", "ru": "Russian", "ar": "Arabic", "pt": "Portuguese",
-        }
-        return names.get(self._target_lang, self._target_lang)
+        return LANGUAGE_NAMES.get(self._target_lang, self._target_lang)
 
     def _context_sentences(self, n=CONTEXT_SENTENCES):
         """Last n committed source sentences, as read-only background.

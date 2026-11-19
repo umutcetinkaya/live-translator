@@ -7,8 +7,8 @@ let H: CGFloat = 460
 // Free on-device mode. Keep in sync with src/local_models.py
 // (MIN_MACOS, LOCAL_MODELS, RAM_THRESHOLD_BYTES).
 let MIN_MACOS = OperatingSystemVersion(majorVersion: 14, minorVersion: 0, patchVersion: 0)
-let STANDARD_MODEL = "mlx-community/Qwen3-4B-Instruct-2507-4bit"
-let SMALL_MODEL = "mlx-community/Qwen3-1.7B-4bit"
+let STANDARD_MODEL = "mlx-community/translategemma-4b-it-8bit"
+let SMALL_MODEL = "mlx-community/translategemma-4b-it-4bit"
 let RAM_THRESHOLD: UInt64 = 16 * 1024 * 1024 * 1024
 let CONFIG_PATH = NSHomeDirectory() + "/.live-translator.json"
 
@@ -187,7 +187,7 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
     // ═══════════════════════════════════════
     // MARK: Step 1: Free mode or own key
     // ═══════════════════════════════════════
-    func modelSizeText() -> String { return lowMemory() ? "about 1 GB" : "about 2.3 GB" }
+    func modelSizeText() -> String { return lowMemory() ? "about 2.2 GB" : "about 4.2 GB" }
 
     func showChoice() {
         clear()

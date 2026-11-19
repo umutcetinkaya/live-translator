@@ -103,15 +103,18 @@ System Audio → Speech Recognition → AI Translation → Live Overlay
 
 Out of the box, Live Translator needs nothing but your Mac:
 
-- **Translation** runs on a small open model through [MLX](https://github.com/ml-explore/mlx), Apple's framework for Apple Silicon. It downloads once in the background on first launch; the panel shows the progress.
+- **Translation** runs on [TranslateGemma](https://huggingface.co/collections/google/translategemma), Google's open translation model, through [MLX](https://github.com/ml-explore/mlx), Apple's framework for Apple Silicon. It downloads once in the background on first launch; the panel shows the progress.
 - **Speech** uses the voices built into macOS, so translations are read aloud instantly, in every supported language.
 
-| Your Mac | Model | Download | Speed (M5 Pro) |
-|----------|-------|----------|----------------|
-| 16 GB RAM or more | [Qwen3 4B Instruct](https://huggingface.co/mlx-community/Qwen3-4B-Instruct-2507-4bit) (Apache-2.0) | 2.3 GB | ~0.6 s per sentence |
-| 8 GB RAM | [Qwen3 1.7B](https://huggingface.co/mlx-community/Qwen3-1.7B-4bit) (Apache-2.0) | 1.0 GB | ~0.4 s per sentence |
+| Model | Used by default on | Download | Memory | Speed (M5 Pro) | Accuracy check |
+|-------|--------------------|----------|--------|----------------|----------------|
+| **Small**: [TranslateGemma 4B, 4-bit](https://huggingface.co/mlx-community/translategemma-4b-it-4bit) | 8 GB Macs | 2.2 GB | ~2.5 GB | ~0.4 s per sentence | 9 of 12 |
+| **Standard**: [TranslateGemma 4B, 8-bit](https://huggingface.co/mlx-community/translategemma-4b-it-8bit) | 16 GB or more | 4.2 GB | ~4.4 GB | ~0.6 s per sentence | 11 of 12 |
+| **Large**: [TranslateGemma 12B, 4-bit](https://huggingface.co/mlx-community/translategemma-12b-it-4bit) | opt-in, 32 GB or more | 6.7 GB | ~7 GB | ~1 s per sentence | 12 of 12 |
 
-You can switch between the two models, or delete a downloaded model, in **Settings**. The smaller model is noticeably weaker; if you have the memory, the standard one reads much more naturally.
+You can switch models, or delete a downloaded one, in **Settings**. The accuracy check is `scripts/bench_local_models.py`: sentences where a wrong translation is easy to miss (weekdays, times, numbers, negations), including unpunctuated text the way speech recognition delivers it, across English, Japanese and Arabic. The small model mostly slips on weekdays in that unpunctuated form, which is why Macs with enough memory get the 8-bit one. General chat models of the same size (Qwen3 4B and 8B, Gemma 3 4B) were tried first and regularly turned "Thursday" into the wrong day in Turkish, so the free mode uses a dedicated translation model instead.
+
+TranslateGemma is released by Google under the [Gemma Terms of Use](https://ai.google.dev/gemma/terms); it is downloaded from Hugging Face on first use, not bundled with the app.
 
 Free mode needs **Apple Silicon (M1 or later) and macOS 14 or later**. On Intel Macs the setup wizard asks for an API key instead.
 
@@ -277,7 +280,7 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
 | No audio detected | Grant Screen & System Audio Recording permission, restart app |
 | STT stops working | Built-in watchdog auto-recovers within 10 seconds |
 | Translation not appearing | Free mode: wait for the model download shown in the panel. Cloud providers: check the API key in Settings |
-| Model download fails | Check your internet connection and free disk space (up to 3 GB), then press Save in Settings to retry |
+| Model download fails | Check your internet connection and free disk space (up to 4.2 GB, or 6.7 GB for the large model), then press Save in Settings to retry |
 | Realtime toggle greyed out | Only OpenAI supports realtime — Anthropic has no audio API |
 | TTS not working | Check TTS provider in Settings; with System voice, make sure a voice for your target language is installed |
 | App not in dock | By design — it's a menu bar app (🌐) |
@@ -286,7 +289,7 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
 
 - **macOS 13 (Ventura)** or later; **free mode: Apple Silicon and macOS 14** or later
 - **Python 3.11+** (auto-installed via setup wizard if missing)
-- **Free mode:** 1 to 3 GB of disk for the translation model
+- **Free mode:** 2.2 to 4.2 GB of disk for the translation model (6.7 GB for the large one)
 - **Optional:** an API key from [OpenAI](https://platform.openai.com), [Google Gemini](https://aistudio.google.com/apikey), or [Anthropic](https://console.anthropic.com) for cloud translation or realtime mode
 
 ---

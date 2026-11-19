@@ -98,15 +98,15 @@ def test_save_sends_anthropic_key(build_html):
 
 from local_models import LOCAL_MODELS
 
-STD, SMALL = LOCAL_MODELS["standard"], LOCAL_MODELS["small"]
+STD, LARGE = LOCAL_MODELS["standard"], LOCAL_MODELS["large"]
 
 
 def _env(**over):
     env = {
         "local_supported": True,
         "local_models": [
-            {"id": STD, "label": "Standard (better) · 2.3 GB", "status": "Ready · 2.3 GB", "warn": ""},
-            {"id": SMALL, "label": "Small (faster) · 1.0 GB", "status": "Not downloaded", "warn": ""},
+            {"id": STD, "label": "Standard · 4.2 GB", "status": "Ready · 2.2 GB", "warn": ""},
+            {"id": LARGE, "label": "Large (most accurate) · 6.7 GB", "status": "Not downloaded", "warn": ""},
         ],
         "system_voices": [
             {"id": "tr.enhanced", "name": "Yelda", "quality": 2},
@@ -154,7 +154,7 @@ def test_local_hides_key_rows_and_shows_model_row(build_html):
 
 def test_local_model_info_embedded(build_html):
     html = build_html(_config(translation_provider="local", model=STD), _env())
-    assert "Standard (better) · 2.3 GB" in html
+    assert "Standard · 4.2 GB" in html
     assert "Not downloaded" in html
 
 

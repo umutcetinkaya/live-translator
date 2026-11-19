@@ -25,7 +25,7 @@ DEFAULTS = {
 }
 
 MODELS = {
-    "local": [LOCAL_MODELS["standard"], LOCAL_MODELS["small"]],
+    "local": [LOCAL_MODELS["small"], LOCAL_MODELS["standard"], LOCAL_MODELS["large"]],
     "openai": ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5.5"],
     "gemini": ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash"],
     "claude": ["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"],
@@ -69,6 +69,13 @@ TARGET_LANGUAGES = {
     "Русский": "ru",
     "العربية": "ar",
     "Português": "pt",
+}
+
+# English names the translation prompts use for each target language code.
+LANGUAGE_NAMES = {
+    "tr": "Turkish", "en": "English", "de": "German", "fr": "French",
+    "es": "Spanish", "it": "Italian", "ja": "Japanese", "zh": "Chinese",
+    "ko": "Korean", "ru": "Russian", "ar": "Arabic", "pt": "Portuguese",
 }
 
 

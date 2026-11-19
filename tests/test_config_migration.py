@@ -26,7 +26,8 @@ def cfg_file(tmp_path, monkeypatch):
     return write
 
 
-def test_fresh_install_gets_free_defaults(cfg_file):
+def test_fresh_install_gets_free_defaults(cfg_file, monkeypatch):
+    monkeypatch.setattr(local_models, "total_ram_bytes", lambda: 16 * 1024 ** 3)
     c = config.load_config()
     assert c["translation_provider"] == "local"
     assert c["model"] == local_models.LOCAL_MODELS["standard"]
@@ -35,6 +36,7 @@ def test_fresh_install_gets_free_defaults(cfg_file):
 
 
 def test_fresh_install_low_ram_gets_small_model(cfg_file, monkeypatch):
+    # 8 GB'lık Mac'te 8-bit model video ve ses tanımayla birlikte belleği zorlar
     monkeypatch.setattr(local_models, "total_ram_bytes", lambda: 8 * 1024 ** 3)
     assert config.load_config()["model"] == local_models.LOCAL_MODELS["small"]
 

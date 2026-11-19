@@ -1,68 +1,73 @@
-"""Benchmark candidate on-device translation models.
+"""Benchmark on-device translation models for accuracy, speed and memory.
 
-Measures load time, per-segment latency, peak memory and prints the
-translations so quality can be judged side by side. Not a test: it downloads
+Runs the same code path the app uses (providers/local.py) on sentences where
+a wrong translation is easy to miss: weekdays, times, numbers and negations.
+Each sentence lists words the translation must contain; misses are counted so
+models can be compared without reading every line. Not a test: it downloads
 models and needs Apple Silicon.
 
-    .venv/bin/python scripts/bench_local_models.py mlx-community/Qwen3-4B-Instruct-2507-4bit ...
+    .venv/bin/python scripts/bench_local_models.py mlx-community/translategemma-4b-it-4bit ...
 """
 
 import os
-import re
 import sys
 import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 
-from providers.base import SEGMENT_SYSTEM_PROMPT, build_segment_prompt  # noqa: E402
+from providers.local import (LocalTranslationProvider, _clean,  # noqa: E402
+                             _language_code, _mlx_generate, _mlx_load)
 
-# (source language, target language, context, segment). Segments are ~18
-# words, the size the segmenter cuts unpunctuated speech into.
+# (source locale, target language, text, words the translation must contain;
+# each entry may list alternatives separated by "|").
 SAMPLES = [
-    ("English", "Turkish", "Today we are looking at how large language models work.",
-     "and the first thing you need to understand is that they predict the next word based on everything before it"),
-    ("English", "Turkish", "",
-     "if you have ever wondered why your phone battery dies so fast in the winter this video is for you"),
-    ("Japanese", "Turkish", "今日は東京の有名なラーメン屋に来ています。",
-     "このお店は朝早くから行列ができていて地元の人にもとても人気があるそうです"),
-    ("Arabic", "Turkish", "",
-     "مرحبا بكم في هذه الحلقة الجديدة سنتحدث اليوم عن تاريخ مدينة إسطنبول القديمة وأهم معالمها"),
-    ("English", "German", "",
-     "we decided to move the meeting to next Thursday because half of the team is traveling this week"),
-    ("English", "Japanese", "",
-     "the weather was terrible all weekend so we stayed home and watched old movies together"),
+    ("en-US", "Turkish", "The meeting has been moved to Thursday afternoon.", ["toplantı", "perşembe"]),
+    # Speech recognition often delivers text without punctuation; small
+    # quantised models get weekdays wrong far more often in this form.
+    ("en-US", "Turkish", "good morning everyone the meeting has been moved to Thursday afternoon",
+     ["günaydın|merhaba", "perşembe"]),
+    ("en-US", "Turkish", "Thursday works for me but Tuesday does not", ["perşembe", "salı"]),
+    ("en-US", "Turkish", "The price went up by 15 percent last year.", ["15", "geçen yıl"]),
+    ("en-US", "Turkish", "Sarah will call you back tomorrow morning.", ["sarah", "yarın", "sabah"]),
+    ("en-US", "Turkish", "She said the results would be ready by Friday, not Wednesday.", ["cuma", "çarşamba"]),
+    ("en-US", "Turkish", "We can't ship this until the security review is done.", ["güvenlik", "kadar"]),
+    ("en-US", "Turkish", "Let's meet next Tuesday at a quarter past three.", ["salı", "üç|15:15|3:15"]),
+    ("en-US", "Turkish", "The doctor told him not to drive for two weeks.", ["iki hafta", "mama|meme"]),
+    ("ja-JP", "Turkish", "このお店は朝早くから行列ができていて地元の人にもとても人気があるそうです",
+     ["sabah", "popüler|sevil|rağbet"]),
+    ("ar-SA", "Turkish", "مرحبا بكم في هذه الحلقة الجديدة سنتحدث اليوم عن تاريخ مدينة إسطنبول القديمة",
+     ["istanbul", "tarih"]),
+    ("en-US", "German", "We decided to move the meeting to next Thursday because half of the team is traveling.",
+     ["donnerstag", "hälfte"]),
 ]
-
-_THINK = re.compile(r"<think>.*?</think>", re.S)
 
 
 def run(repo):
     import mlx.core as mx
-    from mlx_lm import load, generate
-    from mlx_lm.sample_utils import make_sampler
+    from huggingface_hub import snapshot_download
 
+    path = snapshot_download(repo)
     t0 = time.time()
-    model, tok = load(repo)
+    model, tok = _mlx_load(path)
     load_s = time.time() - t0
-    sampler = make_sampler(temp=0.2)
-    times = []
+    provider = LocalTranslationProvider(config={})
+    provider._tokenizer = tok
+    times, misses = [], 0
     print(f"\n=== {repo}  (load {load_s:.1f}s)")
-    for src, tgt, ctx, seg in SAMPLES:
-        msgs = [{"role": "system", "content": SEGMENT_SYSTEM_PROMPT},
-                {"role": "user", "content": build_segment_prompt(seg, ctx, tgt)}]
-        try:
-            prompt = tok.apply_chat_template(msgs, add_generation_prompt=True,
-                                             enable_thinking=False)
-        except TypeError:
-            prompt = tok.apply_chat_template(msgs, add_generation_prompt=True)
+    for locale, target, text, must in SAMPLES:
+        prompt = provider._prompt(text, _language_code(locale), _language_code(target))
         t = time.time()
-        out = generate(model, tok, prompt=prompt, max_tokens=250, sampler=sampler)
-        dt = time.time() - t
-        times.append(dt)
-        out = _THINK.sub("", out).strip()
-        print(f"  [{src}->{tgt}] {dt:.2f}s  {out}")
+        out = _clean(_mlx_generate(model, tok, prompt))
+        times.append(time.time() - t)
+        low = out.replace("İ", "i").replace("I", "ı").lower()
+        missing = [w for w in must if not any(alt in low for alt in w.split("|"))]
+        misses += bool(missing)
+        flag = f"  MISSING {missing}" if missing else ""
+        print(f"  [{locale}->{target}] {times[-1]:.2f}s  {out}{flag}")
+    warm = times[1:] or times
     peak = mx.get_peak_memory() / 1e9
-    print(f"  avg {sum(times)/len(times):.2f}s  max {max(times):.2f}s  peak mem {peak:.2f} GB")
+    print(f"  {len(SAMPLES) - misses}/{len(SAMPLES)} correct  avg {sum(warm)/len(warm):.2f}s"
+          f"  max {max(warm):.2f}s  peak mem {peak:.2f} GB")
     mx.clear_cache()
     mx.reset_peak_memory()
 

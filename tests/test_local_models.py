@@ -1,34 +1,57 @@
-"""Yerel çeviri modeli kayıt defteri: RAM'e göre model seçimi ve destek kontrolü.
+"""Yerel çeviri modeli kayıt defteri ve destek kontrolü.
 
-8 GB'lık Mac'lerde standart model, ses tanıma ve video ile birlikte belleği
-zorlar; bu yüzden 16 GB altında küçük model seçilir. MLX sadece Apple
-Silicon'da ve MIN_MACOS ile üstünde çalışır.
+Üç TranslateGemma kademesi. 4B'nin 4-bit sürümü noktalamasız konuşma
+metninde günleri karıştırıyor (Thursday → Çarşamba); 8-bit sürüm
+karıştırmıyor ama 4,4 GB bellek ister. Bu yüzden 16 GB ve üstünde 8-bit
+varsayılan, 8 GB'lık Mac'te 4-bit. 12B en doğrusu, 7 GB ister, isteğe
+bağlıdır. MLX sadece Apple Silicon'da ve MIN_MACOS ile üstünde çalışır.
 """
 
-from local_models import (LOCAL_MODELS, MIN_MACOS, RAM_THRESHOLD_BYTES,
-                          default_model, is_supported, pick_tier)
+from local_models import (LARGE_MIN_RAM_BYTES, LOCAL_MODELS, MIN_MACOS,
+                          RAM_THRESHOLD_BYTES, default_model, is_supported,
+                          slow_on_this_mac)
 
 GB = 1024 ** 3
 
 
-def test_threshold_is_16_gb():
+def test_models_are_translategemma():
+    assert LOCAL_MODELS == {
+        "small": "mlx-community/translategemma-4b-it-4bit",
+        "standard": "mlx-community/translategemma-4b-it-8bit",
+        "large": "mlx-community/translategemma-12b-it-4bit",
+    }
+
+
+def test_default_depends_on_memory():
     assert RAM_THRESHOLD_BYTES == 16 * GB
-
-
-def test_pick_tier_threshold():
-    assert pick_tier(8 * GB) == "small"
-    assert pick_tier(16 * GB) == "standard"
-    assert pick_tier(48 * GB) == "standard"
-
-
-def test_default_model_maps_tier():
     assert default_model(8 * GB) == LOCAL_MODELS["small"]
-    assert default_model(32 * GB) == LOCAL_MODELS["standard"]
+    assert default_model(16 * GB) == LOCAL_MODELS["standard"]
+    assert default_model(48 * GB) == LOCAL_MODELS["standard"]
 
 
-def test_two_distinct_tiers():
-    assert set(LOCAL_MODELS) == {"standard", "small"}
-    assert LOCAL_MODELS["standard"] != LOCAL_MODELS["small"]
+def test_standard_warns_on_8_gb():
+    assert slow_on_this_mac(LOCAL_MODELS["standard"], 8 * GB) is True
+    assert slow_on_this_mac(LOCAL_MODELS["standard"], 16 * GB) is False
+    assert slow_on_this_mac(LOCAL_MODELS["small"], 8 * GB) is False
+
+
+def test_setup_wizard_constants_match():
+    # Sihirbaz Swift'te ayrı kopya tutar; ayrışırsa ilk açılışta yanlış model iner
+    import os, re
+    root = os.path.dirname(os.path.dirname(__file__))
+    swift = open(os.path.join(root, "scripts", "setup_wizard.swift")).read()
+    assert f'let STANDARD_MODEL = "{LOCAL_MODELS["standard"]}"' in swift
+    assert f'let SMALL_MODEL = "{LOCAL_MODELS["small"]}"' in swift
+    assert "let RAM_THRESHOLD: UInt64 = 16 * 1024 * 1024 * 1024" in swift
+    m = re.search(r"majorVersion: (\d+), minorVersion: (\d+)", swift)
+    assert (int(m.group(1)), int(m.group(2))) == MIN_MACOS
+
+
+def test_large_warns_below_32_gb():
+    assert LARGE_MIN_RAM_BYTES == 32 * GB
+    assert slow_on_this_mac(LOCAL_MODELS["large"], 16 * GB) is True
+    assert slow_on_this_mac(LOCAL_MODELS["large"], 32 * GB) is False
+    assert slow_on_this_mac(LOCAL_MODELS["small"], 8 * GB) is False
 
 
 def test_is_supported():

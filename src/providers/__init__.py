@@ -41,7 +41,7 @@ def get_translation_provider(config):
         return ClaudeTranslationProvider(client=_make_anthropic_client(config))
     if name == "local":
         from providers.local import LocalTranslationProvider
-        return LocalTranslationProvider()
+        return LocalTranslationProvider(config=config)
     raise ProviderError(f"Unknown translation provider: {name}")
 
 

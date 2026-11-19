@@ -42,8 +42,8 @@ def tmp_store(tmp_path, monkeypatch):
 
 
 def test_model_dir_is_flat_and_safe(tmp_store):
-    d = model_store.model_dir("mlx-community/Qwen3-1.7B-4bit")
-    assert d == os.path.join(model_store.MODELS_ROOT, "mlx-community__Qwen3-1.7B-4bit")
+    d = model_store.model_dir("mlx-community/translategemma-4b-it-4bit")
+    assert d == os.path.join(model_store.MODELS_ROOT, "mlx-community__translategemma-4b-it-4bit")
 
 
 def test_not_ready_before_download(tmp_store):

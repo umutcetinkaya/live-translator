@@ -1,8 +1,13 @@
 """Registry of the on-device translation models.
 
-Two tiers: the standard model for Macs with enough memory, and a small one
-for 8 GB machines, where the standard model plus speech recognition plus the
-video being watched would push the system into swap.
+All three are TranslateGemma, Google's translation model built on Gemma 3.
+
+- standard (4B, 8-bit): the default from 16 GB of memory. About 4.4 GB in use.
+- small (4B, 4-bit): the default on 8 GB Macs, where the 8-bit model next to
+  speech recognition and a video would push the system into swap. It mixes up
+  weekdays noticeably more often, mostly on unpunctuated recognised speech.
+- large (12B, 4-bit): the most accurate, about 7 GB in use. Opt-in, and
+  flagged as slow below 32 GB.
 """
 
 import importlib.util
@@ -11,29 +16,39 @@ import platform
 
 # Chosen by scripts/bench_local_models.py (see README, "Free mode").
 LOCAL_MODELS = {
-    "standard": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
-    "small": "mlx-community/Qwen3-1.7B-4bit",
+    "small": "mlx-community/translategemma-4b-it-4bit",
+    "standard": "mlx-community/translategemma-4b-it-8bit",
+    "large": "mlx-community/translategemma-12b-it-4bit",
 }
 
 # Oldest macOS the published MLX wheels support (macosx_14_0_arm64).
 # scripts/setup_wizard.swift carries a copy of this value.
 MIN_MACOS = (14, 0)
 
+# scripts/setup_wizard.swift carries a copy of this value.
 RAM_THRESHOLD_BYTES = 16 * 1024 ** 3
+LARGE_MIN_RAM_BYTES = 32 * 1024 ** 3
 
 
 def total_ram_bytes():
     return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
 
 
-def pick_tier(ram_bytes):
-    return "standard" if ram_bytes >= RAM_THRESHOLD_BYTES else "small"
-
-
 def default_model(ram_bytes=None):
     if ram_bytes is None:
         ram_bytes = total_ram_bytes()
-    return LOCAL_MODELS[pick_tier(ram_bytes)]
+    return LOCAL_MODELS["standard" if ram_bytes >= RAM_THRESHOLD_BYTES else "small"]
+
+
+def slow_on_this_mac(repo, ram_bytes=None):
+    """True when `repo` would crowd this Mac's memory during live use."""
+    needs = {LOCAL_MODELS["standard"]: RAM_THRESHOLD_BYTES,
+             LOCAL_MODELS["large"]: LARGE_MIN_RAM_BYTES}.get(repo)
+    if needs is None:
+        return False
+    if ram_bytes is None:
+        ram_bytes = total_ram_bytes()
+    return ram_bytes < needs
 
 
 def _macos_version():

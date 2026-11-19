@@ -1,7 +1,7 @@
 """Ayarlar ekranı için ortam bilgisi: yerel modellerin durumu ve sistem sesleri.
 
 HTML üretimi saf kalsın diye bu bilgiler ayrı toplanır. Kritik nokta:
-8 GB'lık Mac'te standart model seçilirse uyarı görünmeli, inmiş model
+32 GB altındaki Mac'te büyük model için uyarı görünmeli, inmiş model
 "Ready" ve boyutuyla görünmeli.
 """
 
@@ -25,25 +25,42 @@ def _lister():
             {"id": "en.x", "name": "Samantha", "quality": 2, "language": "en-US"}]
 
 
-def test_models_listed_standard_first(monkeypatch):
+def test_models_listed_small_to_large(monkeypatch):
     _patch(monkeypatch)
     env = settings_env.build({"target_lang": "tr"}, voice_lister=_lister)
-    assert [m["id"] for m in env["local_models"]] == [LOCAL_MODELS["standard"], LOCAL_MODELS["small"]]
+    assert [m["id"] for m in env["local_models"]] == [
+        LOCAL_MODELS["small"], LOCAL_MODELS["standard"], LOCAL_MODELS["large"]]
+    assert [m["label"] for m in env["local_models"]] == [
+        "Small (less accurate) · 2.2 GB", "Standard · 4.2 GB", "Large (most accurate) · 6.7 GB"]
     assert env["local_supported"] is True
 
 
 def test_ready_model_shows_size(monkeypatch):
     _patch(monkeypatch, ready={LOCAL_MODELS["standard"]})
     env = settings_env.build({"target_lang": "tr"}, voice_lister=_lister)
-    assert env["local_models"][0]["status"] == "Ready · 2.3 GB"
-    assert env["local_models"][1]["status"] == "Not downloaded"
+    assert env["local_models"][1]["status"] == "Ready · 2.3 GB"
+    assert env["local_models"][0]["status"] == "Not downloaded"
 
 
-def test_low_ram_warns_on_standard_only(monkeypatch):
+def test_16_gb_warns_on_large_only(monkeypatch):
+    _patch(monkeypatch, ram=16 * GB)
+    env = settings_env.build({"target_lang": "tr"}, voice_lister=_lister)
+    assert [m["warn"] for m in env["local_models"]] == [
+        "", "", "Needs 32 GB of memory, may be slow on this Mac"]
+
+
+def test_8_gb_warns_on_standard_and_large(monkeypatch):
     _patch(monkeypatch, ram=8 * GB)
     env = settings_env.build({"target_lang": "tr"}, voice_lister=_lister)
-    assert env["local_models"][0]["warn"] == "May be slow on this Mac"
-    assert env["local_models"][1]["warn"] == ""
+    assert [m["warn"] for m in env["local_models"]] == [
+        "", "Needs 16 GB of memory, may be slow on this Mac",
+        "Needs 32 GB of memory, may be slow on this Mac"]
+
+
+def test_32_gb_no_warning(monkeypatch):
+    _patch(monkeypatch, ram=32 * GB)
+    env = settings_env.build({"target_lang": "tr"}, voice_lister=_lister)
+    assert [m["warn"] for m in env["local_models"]] == ["", "", ""]
 
 
 def test_system_voices_for_target_language(monkeypatch):
