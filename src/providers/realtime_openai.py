@@ -12,6 +12,9 @@ import threading
 from providers.base import RealtimeProvider, ProviderError
 
 _URL = "wss://api.openai.com/v1/realtime/translations"
+# The translation endpoint only serves this model; the text model picked in
+# Settings (e.g. gpt-6-luna) must not be sent here.
+REALTIME_TRANSLATE_MODEL = "gpt-realtime-translate"
 
 
 def _default_ws_factory(url, headers):
@@ -40,7 +43,7 @@ class OpenAIRealtimeProvider(RealtimeProvider):
         self._on_translation = on_translation
         self._on_source = on_source
         headers = {"Authorization": f"Bearer {self._api_key}"}
-        url = f"{_URL}?model={self._model}"
+        url = f"{_URL}?model={REALTIME_TRANSLATE_MODEL}"
         self._ws = self._ws_factory(url, headers)
         self._running = True
         self._reader = threading.Thread(target=self._read_loop, daemon=True)

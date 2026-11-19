@@ -28,6 +28,19 @@ Rules:
 - If source ends mid-sentence, translate what you can"""
 
 
+# Lowest reasoning each model accepts. A subtitle is not a reasoning task,
+# and the default (medium) only adds delay. GPT-6.2 Sol rejects "none".
+_REASONING_EFFORT = {
+    "gpt-6-luna": "none",
+    "gpt-6.1-terra": "none",
+    "gpt-6.2-sol": "low",
+}
+
+
+def _is_modern(model):
+    return model.startswith(("o", "gpt-5", "gpt-6"))
+
+
 class OpenAITranslationProvider(TranslationProvider):
     def __init__(self, client):
         self._client = client
@@ -37,7 +50,7 @@ class OpenAITranslationProvider(TranslationProvider):
             return ""
         if not self._client:
             raise ProviderError("OpenAI: no API key")
-        modern = model.startswith("o") or model.startswith("gpt-5")
+        modern = _is_modern(model)
         params = {
             "model": model,
             "messages": [
@@ -49,6 +62,8 @@ class OpenAITranslationProvider(TranslationProvider):
         }
         if modern:
             params["max_completion_tokens"] = SEGMENT_MAX_TOKENS
+            if model in _REASONING_EFFORT:
+                params["reasoning_effort"] = _REASONING_EFFORT[model]
         else:
             params["max_tokens"] = SEGMENT_MAX_TOKENS
             params["temperature"] = 0.2
@@ -61,7 +76,7 @@ class OpenAITranslationProvider(TranslationProvider):
     def translate_document(self, source, prev_translation, target_lang, model):
         if not self._client:
             raise ProviderError("OpenAI: no API key")
-        modern = model.startswith("o") or model.startswith("gpt-5")
+        modern = _is_modern(model)
         system = SYSTEM_PROMPT.replace("{target_lang}", target_lang)
         user_msg = f"Full transcript:\n\n{source}"
         if prev_translation:

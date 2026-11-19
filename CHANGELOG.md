@@ -7,6 +7,17 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Cloud models updated: OpenAI GPT-6 Luna (default), GPT-6.1 Terra and GPT-6.2 Sol; Gemini 3.5 Flash-Lite (default), 3.6 Flash and 3.8 Flash; Claude Haiku 5.5 (default), Sonnet 5.5 and Opus 5.5. Each model is asked for the least reasoning it allows, which keeps subtitles fast.
+- A saved model that is no longer listed moves to its successor in the same tier (for example Claude Sonnet 5 to Sonnet 5.5, GPT-5.4 mini to GPT-6.1 Terra), instead of falling back to the cheapest model. Settings shows the successor too.
+- Gemini voices use Gemini 3.8 Flash-Lite TTS; the previous TTS model shuts down on December 18, 2026.
+
+### Fixed
+
+- Gemini 2.5 Flash, which Google shuts down on December 1, 2026, is no longer offered.
+- OpenAI realtime mode sent the text model's name to the translation endpoint; it now always uses `gpt-realtime-translate`.
+
 ## [0.2.0] - 2026-11-19
 
 Live Translator is now free: translation and speech run on the Mac, with no account and no API key. See [What's new](WHATS-NEW.md) for the overview.

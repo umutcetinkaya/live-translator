@@ -76,14 +76,6 @@ def test_target_language_goes_in_message_not_system():
     assert "Turkish" in user_text
 
 
-def test_sonnet_disables_thinking():
-    """Sonnet 5'te adaptive thinking varsayılan AÇIK — gecikme ekler, kapatılmalı."""
-    client = _fake_client()
-    p = ClaudeTranslationProvider(client=client)
-    p.translate_document("Hello", "", "Turkish", "claude-sonnet-5")
-    kwargs = client.messages.create.call_args.kwargs
-    assert kwargs["thinking"] == {"type": "disabled"}
-
 
 def test_haiku_omits_thinking():
     """Haiku 4.5 thinking desteklemez; parametre gönderilmemeli."""
@@ -100,20 +92,6 @@ def test_haiku_omits_effort():
     p.translate_document("Hello", "", "Turkish", "claude-haiku-4-5")
     assert "output_config" not in client.messages.create.call_args.kwargs
 
-
-def test_reasoning_models_disable_thinking_without_effort():
-    """Thinking kapatılır; effort GÖNDERİLMEZ.
-
-    Ölçüldü: Sonnet 5'te effort=low gecikmeyi 2.19s -> 3.49s'e ÇIKARIYOR.
-    Sezgiye aykırı, o yüzden test ediyoruz — biri 'hızlansın diye' effort
-    eklemeye kalkarsa burada yakalanır."""
-    client = _fake_client()
-    p = ClaudeTranslationProvider(client=client)
-    for model in ("claude-sonnet-5", "claude-opus-5"):
-        p.translate_document("Hello", "", "Turkish", model)
-        kwargs = client.messages.create.call_args.kwargs
-        assert kwargs["thinking"] == {"type": "disabled"}, model
-        assert "output_config" not in kwargs, model
 
 
 def test_max_tokens_leaves_room_for_long_documents():

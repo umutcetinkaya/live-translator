@@ -21,7 +21,7 @@ from WebKit import WKWebView, WKWebViewConfiguration
 from PyObjCTools import AppHelper
 
 from config import (
-    OVERLAY_OPACITY, SOURCE_LANGUAGES, TARGET_LANGUAGES, MODELS,
+    OVERLAY_OPACITY, SOURCE_LANGUAGES, TARGET_LANGUAGES, MODELS, normalize_model,
     load_config, save_config,
 )
 
@@ -769,7 +769,8 @@ initSettings();
         "local_prov_option": local_prov_option,
         "system_voice_options": system_voice_options,
         "voice_hint": voice_hint,
-        "current_model_json": json.dumps(config.get("model", "")),
+        "current_model_json": json.dumps(normalize_model(
+            config.get("model", ""), config.get("translation_provider", "openai"))),
         "realtime_checked": "checked" if config.get("realtime_mode") else "",
         "realtime_warn_display": "block" if config.get("realtime_mode") else "none",
     }
@@ -807,7 +808,7 @@ class _NavDelegate(NSObject):
                 params.get("openaiKey", ""),
                 params.get("geminiKey", ""),
                 params.get("anthropicKey", ""),
-                params.get("model", "gpt-5.4-mini"),
+                params.get("model", "gpt-6-luna"),
                 params.get("ttsProvider", "piper"),
                 params.get("ttsSpeed", "1.0"),
                 params.get("ttsVoice", "nova"),
