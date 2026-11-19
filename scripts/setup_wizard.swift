@@ -208,7 +208,7 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
         cv.addSubview(greenBtn(NSRect(x: 70, y: H-310, width: W-140, height: 46),
                                "Free · On-device (recommended)", action: #selector(onFree)))
         cv.addSubview(lbl(NSRect(x: 50, y: H-352, width: W-100, height: 34),
-                          "No account, no API key. One-time download of \(modelSizeText()).\nAudio and text never leave your Mac.",
+                          "No account, no API key. One-time download of \(modelSizeText()).\nTranslation and voice run on your Mac.",
                           size: 11, weight: .regular, color: NSColor(white: 0.45, alpha: 1)))
 
         cv.addSubview(ghostBtn(NSRect(x: (W-260)/2, y: 70, width: 260, height: 30),
@@ -331,7 +331,7 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
         cv.addSubview(lbl(NSRect(x: 30, y: H-180, width: W-60, height: 35),
                           "Setting up...", size: 24, weight: .bold))
 
-        cv.addSubview(lbl(NSRect(x: 50, y: H-215, width: W-100, height: 30),
+        cv.addSubview(lbl(NSRect(x: 50, y: H-221, width: W-100, height: 36),
                           needsPiperModels() ? "Installing packages and downloading voice models.\nThis only happens once."
                                              : "Installing packages.\nThis only happens once.",
                           size: 13, weight: .regular, color: NSColor(white: 0.42, alpha: 1)))
@@ -519,10 +519,12 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
 
         cv.addSubview(sep(H - 205))
 
-        cv.addSubview(lbl(NSRect(x: 50, y: H-280, width: W-100, height: 60),
+        // Fills the space between the separator and the Launch button; a
+        // shorter frame cut the text off after its second line.
+        cv.addSubview(lbl(NSRect(x: 50, y: 96, width: W-100, height: H-205-96-14),
                           usesFreeModel()
-                            ? "Live Translator is ready.\n\nThe free translation model (\(modelSizeText())) downloads in the\nbackground the first time it starts. Progress shows in the panel.\n\nYou can change settings anytime from the panel."
-                            : "Live Translator is ready.\n\nPlay any audio on your Mac and translations\nwill appear in the floating panel.\n\nYou can change settings anytime from the panel.",
+                            ? "Live Translator is ready.\n\nThe free translation model (\(modelSizeText())) downloads in the background the first time it starts. The panel shows the progress.\n\nYou can change settings anytime from the panel."
+                            : "Live Translator is ready.\n\nPlay any audio on your Mac and translations will appear in the floating panel.\n\nYou can change settings anytime from the panel.",
                           size: 13, weight: .regular, color: NSColor(white: 0.48, alpha: 1)))
 
         cv.addSubview(greenBtn(NSRect(x: (W-170)/2, y: 30, width: 170, height: 46),
@@ -538,7 +540,7 @@ class SetupWindow: NSWindow, NSTextFieldDelegate {
                           "Setup Failed", size: 24, weight: .bold,
                           color: NSColor(red: 0.9, green: 0.3, blue: 0.3, alpha: 1)))
         cv.addSubview(sep(H - 190))
-        cv.addSubview(lbl(NSRect(x: 50, y: H-290, width: W-100, height: 80),
+        cv.addSubview(lbl(NSRect(x: 50, y: 76, width: W-100, height: H-190-76-10),
                           message, size: 13, weight: .regular,
                           color: NSColor(white: 0.5, alpha: 1)))
         cv.addSubview(ghostBtn(NSRect(x: (W-80)/2, y: 30, width: 80, height: 36),

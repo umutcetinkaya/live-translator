@@ -7,9 +7,13 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-19
+
+Live Translator is now free: translation and speech run on the Mac, with no account and no API key. See [What's new](WHATS-NEW.md) for the overview.
+
 ### Added
 
-- **Free on-device mode, now the default.** No account and no API key: translation runs on your Mac with [TranslateGemma](https://huggingface.co/collections/google/translategemma) through MLX, and translations are read aloud with the voices built into macOS. Audio and text never leave the Mac. Requires Apple Silicon and macOS 14 or later.
+- **Free on-device mode, now the default.** No account and no API key: translation runs on your Mac with [TranslateGemma](https://huggingface.co/collections/google/translategemma) through MLX, and translations are read aloud with the voices built into macOS. Nothing is sent to an AI service. Requires Apple Silicon and macOS 14 or later.
 - Three on-device models, chosen by memory: Small (TranslateGemma 4B, 4-bit) on 8 GB Macs, Standard (4B, 8-bit) from 16 GB, and an opt-in Large (12B) for the best accuracy. Switch or delete them in Settings.
 - The translation model downloads in the background on first launch, with progress in the panel. Download errors stay visible until resolved.
 - **System voice** speech provider: free, offline and instant in every supported language. Picks the best installed voice automatically, or choose one in Settings. Enhanced and Premium voices are listed first.
@@ -33,6 +37,7 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- Setup wizard text was cut off on the last step and on the error screen.
 - Translation never triggered on unpunctuated speech recognition output.
 - Half sentences produced meaningless translations.
 - Translations only appeared once the speaker paused.
@@ -65,6 +70,7 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Text-to-speech with Piper (offline) or OpenAI voices.
 - Setup wizard and in-app settings.
 
-[Unreleased]: https://github.com/umutcetinkaya/live-translator/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/umutcetinkaya/live-translator/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/umutcetinkaya/live-translator/compare/v0.0.1...v0.1.0
 [0.0.1]: https://github.com/umutcetinkaya/live-translator/releases/tag/v0.0.1

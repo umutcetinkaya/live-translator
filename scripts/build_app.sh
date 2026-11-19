@@ -60,18 +60,16 @@ cp -r src/ "${APP_DIR}/Contents/Resources/src/"
 cp requirements.txt "${APP_DIR}/Contents/Resources/"
 cp scripts/download_models.sh "${APP_DIR}/Contents/Resources/scripts/"
 
-# Compile setup wizard if needed
-if [ ! -f scripts/setup_wizard ] || [ scripts/setup_wizard.swift -nt scripts/setup_wizard ]; then
-    echo "  Compiling setup wizard..."
-    swiftc -O -o scripts/setup_wizard scripts/setup_wizard.swift -framework Cocoa
-fi
+# Always compile the setup wizard: a fresh clone gives the source and the
+# committed binary the same timestamp, so a "newer than" check would ship a
+# stale wizard.
+echo "  Compiling setup wizard..."
+swiftc -O -o scripts/setup_wizard scripts/setup_wizard.swift -framework Cocoa
 cp scripts/setup_wizard "${APP_DIR}/Contents/Resources/scripts/"
 
-# Copy models if exist
-if ls models/*.onnx 1>/dev/null 2>&1; then
-    cp models/*.onnx models/*.onnx.json "${APP_DIR}/Contents/Resources/models/" 2>/dev/null || true
-    echo "  Models included"
-fi
+# Piper voices are not bundled: the app downloads the one it needs on first
+# use, and bundling whatever happens to be in models/ made the build depend
+# on the machine it ran on.
 
 # Launcher — runs setup wizard if needed, then launches app
 cat > "${APP_DIR}/Contents/MacOS/launcher" << 'LAUNCHER'
