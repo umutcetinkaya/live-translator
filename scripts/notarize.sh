@@ -5,12 +5,11 @@
 #   xcrun notarytool store-credentials "livetranslator-notary" \
 #       --apple-id you@example.com --team-id BD927P383Y
 # (the password is an app-specific password from account.apple.com).
-# Set NOTARY_PROFILE to use another profile name, or set APPLE_ID and
-# APP_PASSWORD to pass credentials directly instead.
+# Credentials are only read from the keychain, never from the environment or
+# the command line. Set NOTARY_PROFILE to use another profile name.
 set -e
 
 DMG="$1"
-TEAM_ID="${TEAM_ID:-BD927P383Y}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-livetranslator-notary}"
 
 if [ -z "$DMG" ] || [ ! -f "$DMG" ]; then
@@ -18,11 +17,7 @@ if [ -z "$DMG" ] || [ ! -f "$DMG" ]; then
     exit 1
 fi
 
-if [ -n "${APPLE_ID:-}" ] && [ -n "${APP_PASSWORD:-}" ]; then
-    AUTH=(--apple-id "${APPLE_ID}" --team-id "${TEAM_ID}" --password "${APP_PASSWORD}")
-else
-    AUTH=(--keychain-profile "${NOTARY_PROFILE}")
-fi
+AUTH=(--keychain-profile "${NOTARY_PROFILE}")
 
 echo "=== Notarizing ${DMG} ==="
 xcrun notarytool submit "${DMG}" "${AUTH[@]}" --wait --output-format json > dist/notarize.json
