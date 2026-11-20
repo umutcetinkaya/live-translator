@@ -7,6 +7,8 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-20
+
 ### Changed
 
 - OpenAI voices now run on the Realtime API with `gpt-realtime-2.1-mini`. OpenAI shuts down the previous speech models (`tts-1`, `gpt-4o-mini-tts`) on January 6, 2027. The voice list in Settings follows the Realtime voices, with Marin and Cedar first; a saved voice that no longer exists moves to its closest match (Nova to Marin, Onyx to Cedar, Fable to Verse).
@@ -92,7 +94,8 @@ Live Translator is now free: translation and speech run on the Mac, with no acco
 - Text-to-speech with Piper (offline) or OpenAI voices.
 - Setup wizard and in-app settings.
 
-[Unreleased]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/umutcetinkaya/live-translator/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/umutcetinkaya/live-translator/compare/v0.0.1...v0.1.0
