@@ -927,6 +927,10 @@ class TranslationOverlay:
     def _save_settings(self, provider, openai_key, gemini_key, anthropic_key,
                        model, tts_provider="piper", tts_speed="1.0",
                        tts_voice="marin", realtime="0", system_voice=""):
+        # Start from what is on disk: speech on/off, the speech level and the
+        # languages are saved elsewhere while the app runs, and the copy loaded
+        # at startup would write their old values back.
+        self._config = load_config()
         self._config["translation_provider"] = provider
         self._config["openai_api_key"] = openai_key
         self._config["gemini_api_key"] = gemini_key

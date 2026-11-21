@@ -13,7 +13,6 @@ DEFAULTS = {
     "openai_api_key": "",
     "gemini_api_key": "",
     "anthropic_api_key": "",
-    "source_lang": "en",
     "source_locale": "en-US",
     "target_lang": "tr",
     "model": "gpt-6-luna",

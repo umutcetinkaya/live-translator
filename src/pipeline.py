@@ -263,7 +263,11 @@ class TranslationPipeline:
         if what == "provider":
             self._tts.set_provider(value)
         elif what == "level":
-            self._tts.set_speech_level(float(value) / 100.0)
+            level = float(value) / 100.0
+            self._tts.set_speech_level(level)
+            # Remember it for the next launch, like the speech on/off toggle.
+            self._config["speech_level"] = level
+            save_config(self._config)
         elif what == "system":
             _set_system_volume(float(value) / 100.0)
 
