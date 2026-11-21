@@ -11,7 +11,7 @@
 <p align="center">
   <strong>Free, private, real-time translation for any audio on your Mac.</strong><br>
   YouTube, podcasts, meetings, movies: see the translation live on screen and hear it read aloud.<br>
-  No account. No API key. Everything runs on your Mac.
+  No account. No API key. Translation and voice run on your Mac.
 </p>
 
 <p align="center">
@@ -155,7 +155,7 @@ Out of the box, Live Translator needs nothing but your Mac:
 | **Standard**: [TranslateGemma 4B, 8-bit](https://huggingface.co/mlx-community/translategemma-4b-it-8bit) | 16 GB or more | 4.2 GB | ~4.4 GB | ~0.6 s per sentence | 11 of 12 |
 | **Large**: [TranslateGemma 12B, 4-bit](https://huggingface.co/mlx-community/translategemma-12b-it-4bit) | opt-in, 32 GB or more | 6.7 GB | ~7 GB | ~1 s per sentence | 12 of 12 |
 
-You can switch models, or delete a downloaded one, in **Settings**. The accuracy check is `scripts/bench_local_models.py`: sentences where a wrong translation is easy to miss (weekdays, times, numbers, negations), including unpunctuated text the way speech recognition delivers it, across English, Japanese and Arabic. In those tests the small model got weekdays wrong in unpunctuated text where the 8-bit one did not, which is why Macs with enough memory get the 8-bit model. General chat models of the same size (Qwen3 4B and 8B, Gemma 3 4B) were tried first and regularly turned "Thursday" into the wrong day in Turkish, so the free mode uses a dedicated translation model instead.
+You can switch models, or delete a downloaded one, in **Settings**. The accuracy check is `scripts/bench_local_models.py`: sentences where a wrong translation is easy to miss (weekdays, times, numbers, negations), including unpunctuated text the way speech recognition delivers it, from English, Japanese and Arabic. The scores above are from the first 12 sentences; Spanish sentences were added later. In those tests the small model got weekdays wrong in unpunctuated text where the 8-bit one did not, which is why Macs with enough memory get the 8-bit model. General chat models of the same size (Qwen3 4B and 8B, Gemma 3 4B) were tried first and regularly turned "Thursday" into the wrong day in Turkish, so the free mode uses a dedicated translation model instead.
 
 TranslateGemma is released by Google under the [Gemma Terms of Use](https://ai.google.dev/gemma/terms); it is downloaded from Hugging Face on first use, not bundled with the app.
 
@@ -198,7 +198,7 @@ macOS ships a basic voice per language. For a much more natural one, open **Syst
 | **OpenAI** | Natural voices through the Realtime API (Marin and Cedar recommended, 8 more) | Costs money; speeds above 1.5x are capped |
 | **Gemini TTS** | Natural voices via Gemini | Costs money |
 
-Spoken translations are loudness-normalised, and the source audio is turned down while they play. The app's own voice is filtered out of the capture, so there are no feedback loops.
+Spoken translations are loudness-normalised so they stay audible over the source; to make the source quieter, turn it down in your player. The app's own voice is filtered out of the capture, so there are no feedback loops.
 
 ## Cloud providers (optional)
 
@@ -261,7 +261,7 @@ live-translator/
 │   ├── model_store.py           # Model download + progress
 │   ├── pipeline.py              # Listener + Translator orchestrator
 │   ├── overlay.py               # WebKit floating panel (HTML/CSS/JS)
-│   ├── tts.py                   # Speech queue, normalisation, ducking
+│   ├── tts.py                   # Speech queue, normalisation
 │   └── config.py                # JSON settings
 ├── scripts/
 │   ├── build_app.sh             # Build .app bundle
@@ -310,7 +310,7 @@ Once per launch the app asks GitHub (`api.github.com`) for the latest release, s
 |---------|----------|
 | "Damaged and can't be opened" | Download the DMG again from the [releases page](https://github.com/umutcetinkaya/live-translator/releases/latest); versions before 0.2.0 were not notarized |
 | No audio detected | Grant Screen & System Audio Recording permission, restart app |
-| STT stops working | Built-in watchdog auto-recovers within 10 seconds |
+| STT stops working | Built-in watchdog auto-recovers within about 20 seconds |
 | Translation not appearing | Free mode: wait for the model download shown in the panel. Cloud providers: check the API key in Settings |
 | Model download fails | Check your internet connection and free disk space (up to 4.2 GB, or 6.7 GB for the large model), then press Save in Settings to retry |
 | First launch after updating is slow | The app installs its new components once; this can take about a minute |
