@@ -39,6 +39,12 @@ SAMPLES = [
      ["istanbul", "tarih"]),
     ("en-US", "German", "We decided to move the meeting to next Thursday because half of the team is traveling.",
      ["donnerstag", "hälfte"]),
+    ("en-US", "Spanish", "We can't ship the order until next Friday.", ["pedido", "viernes"]),
+    ("en-US", "Spanish", "please call me back tomorrow morning at half past nine",
+     ["mañana|manana", "nueve"]),
+    ("en-US", "Spanish", "The price went up by 20 percent last year.", ["20", "precio", "pasado"]),
+    ("en-US", "Spanish", "Anna asked for the report by Wednesday, not Tuesday.",
+     ["anna", "miércoles|miercoles", "martes"]),
 ]
 
 
