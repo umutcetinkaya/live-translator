@@ -23,6 +23,7 @@ import threading
 from overlay import TranslationOverlay
 from pipeline import TranslationPipeline
 from config import load_config, save_config
+from update_check import app_version, check_for_update
 
 
 class AppDelegate(NSObject):
@@ -33,6 +34,7 @@ class AppDelegate(NSObject):
             return None
         self._overlay = None
         self._pipeline = None
+        self._update_url = None
         self._config = load_config()
         return self
 
@@ -52,6 +54,34 @@ class AppDelegate(NSObject):
         self._overlay.setup()
         self._overlay.show()
         threading.Thread(target=self._start_pipeline, daemon=True).start()
+        threading.Thread(target=self._check_for_update, daemon=True).start()
+
+    def _check_for_update(self):
+        update = check_for_update(app_version(_BASE), self._config)
+        if update:
+            self.performSelectorOnMainThread_withObject_waitUntilDone_(
+                "showUpdate:", update, False
+            )
+
+    def showUpdate_(self, update):
+        """Main thread: put the new release at the top of the menu bar menu."""
+        self._update_url = update["url"]
+        menu = self._status_item.menu()
+        item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+            f"⬆ Update to {update['version']}…", "openUpdate:", ""
+        )
+        item.setTarget_(self)
+        menu.insertItem_atIndex_(item, 0)
+        menu.insertItem_atIndex_(NSMenuItem.separatorItem(), 1)
+        self._overlay.update_original_on_main_thread(
+            f"⬆ {update['version']} available: 🌐 menu"
+        )
+
+    @objc.IBAction
+    def openUpdate_(self, sender):
+        from AppKit import NSWorkspace
+        from Foundation import NSURL
+        NSWorkspace.sharedWorkspace().openURL_(NSURL.URLWithString_(self._update_url))
 
     def _start_pipeline(self):
         try:

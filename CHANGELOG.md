@@ -9,6 +9,8 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
+- Turkish, Dutch and Polish as spoken (source) languages, and Dutch and Polish as target languages, with Piper voices for both ([#11](https://github.com/umutcetinkaya/live-translator/issues/11)).
+- Update notice: once per launch the app asks GitHub for the latest release and, when it is newer, adds an "Update to …" item to the 🌐 menu that opens the release page. Turn it off with `"check_for_updates": false`.
 - Turkish README (README.tr.md), linked from the top of the English README.
 
 ## [0.2.2] - 2026-11-20

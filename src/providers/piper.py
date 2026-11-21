@@ -20,6 +20,8 @@ PIPER_VOICES = {
     "ru": "ru_RU-denis-medium",
     "ar": "ar_JO-kareem-medium",
     "pt": "pt_BR-faber-medium",
+    "nl": "nl_NL-mls-medium",
+    "pl": "pl_PL-gosia-medium",
 }
 
 
@@ -36,6 +38,8 @@ PIPER_PATHS = {
     "ru": "ru/ru_RU/denis/medium",
     "ar": "ar/ar_JO/kareem/medium",
     "pt": "pt/pt_BR/faber/medium",
+    "nl": "nl/nl_NL/mls/medium",
+    "pl": "pl/pl_PL/gosia/medium",
 }
 
 

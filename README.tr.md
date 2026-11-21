@@ -81,8 +81,8 @@ Sistem sesi        →  Konuşma tanıma   →  Çeviri                  →  Pa
 - **Varsayılan olarak ücretsiz ve cihaz üzerinde**: çeviri, Google'ın açık çeviri modeli [TranslateGemma](https://huggingface.co/collections/google/translategemma) ile doğrudan Mac'inizde yapılır
 - **Sesli okuma**: çeviriler ücretsiz macOS sesleriyle okunur; Piper, OpenAI ve Gemini sesleri de kullanılabilir
 - Mac'inizde çalan her sesin **anlık çevirisi**
-- **11 kaynak dil**: İngilizce, Almanca, Fransızca, İspanyolca, İtalyanca, Japonca, Çince, Korece, Rusça, Arapça, Portekizce
-- **12 hedef dil**: desteklenen herhangi bir dile çevirin
+- **14 kaynak dil**: İngilizce, Almanca, Fransızca, İspanyolca, İtalyanca, Japonca, Çince, Korece, Rusça, Arapça, Portekizce, Türkçe, Hollandaca, Lehçe
+- **14 hedef dil**: desteklenen herhangi bir dile çevirin
 - **Cümle cümle**: biten her cümle bir kez çevrilir ve öyle kalır, böylece uzun oturumlar da hızlı kalır
 - **Kendi anahtarınızı kullanın (isteğe bağlı)**: bulut çevirisi için OpenAI, Google Gemini ya da Anthropic Claude
 - **Yüzen panel**: koyu temalı, sürüklenebilir, her zaman üstte, canlı ses kontrolleriyle
@@ -91,8 +91,11 @@ Sistem sesi        →  Konuşma tanıma   →  Çeviri                  →  Pa
 - **İsteğe bağlı realtime modu**: OpenAI'ın Realtime Translation modeliyle daha düşük gecikme; ses sağlayıcıya aktarılır
 - **Otomatik toparlanma**: bir watchdog takılmaları tespit edip düzeltir
 - **Menü çubuğu uygulaması**: 🌐 simgesiyle sessizce çalışır
+- **Güncelleme bildirimi**: yeni sürüm çıktığında 🌐 menüsünde görünür
 
 ## v0.2'de neler yeni
+
+**v0.2.3**, Türkçe, Hollandaca ve Lehçeyi konuşulan dil olarak ekler (Hollandaca ve Lehçe hedef dil olarak da gelir) ve yeni bir sürüm çıktığında bunu 🌐 menüsünde gösterir.
 
 **v0.2.2**, OpenAI'ın eski konuşma modelleri 6 Ocak 2027'de kapanmadan önce OpenAI seslerini Realtime API'ye taşır. Kayıtlı sesiniz ona en yakın sese geçer.
 
@@ -290,6 +293,7 @@ Ayarlar `~/.live-translator.json` dosyasında tutulur ve uygulama içindeki Ayar
   "tts_enabled": true,
   "tts_speed": 1.0,
   "realtime_mode": false,
+  "check_for_updates": true,
   "openai_api_key": "",
   "gemini_api_key": "",
   "anthropic_api_key": ""
@@ -297,6 +301,8 @@ Ayarlar `~/.live-translator.json` dosyasında tutulur ve uygulama içindeki Ayar
 ```
 
 İndirilen modeller `~/Library/Application Support/LiveTranslator/models` altında durur.
+
+Uygulama her açılışta bir kez, güncellemeleri haber verebilmek için GitHub'a (`api.github.com`) en son sürümü sorar. Sizinle ya da sesinizle ilgili hiçbir şey gönderilmez; kapatmak için `"check_for_updates": false` yazın.
 
 ## Sorun giderme
 

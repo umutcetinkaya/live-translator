@@ -22,6 +22,8 @@ DEFAULTS = {
     "tts_speed": 1.0,
     "tts_enabled": False,
     "realtime_mode": False,
+    # Ask GitHub once per launch whether a newer release exists.
+    "check_for_updates": True,
 }
 
 MODELS = {
@@ -73,6 +75,9 @@ SOURCE_LANGUAGES = {
     "Russian": "ru-RU",
     "Arabic": "ar-SA",
     "Portuguese": "pt-BR",
+    "Turkish": "tr-TR",
+    "Dutch": "nl-NL",
+    "Polish": "pl-PL",
 }
 
 TARGET_LANGUAGES = {
@@ -88,6 +93,8 @@ TARGET_LANGUAGES = {
     "Русский": "ru",
     "العربية": "ar",
     "Português": "pt",
+    "Nederlands": "nl",
+    "Polski": "pl",
 }
 
 # English names the translation prompts use for each target language code.
@@ -95,6 +102,7 @@ LANGUAGE_NAMES = {
     "tr": "Turkish", "en": "English", "de": "German", "fr": "French",
     "es": "Spanish", "it": "Italian", "ja": "Japanese", "zh": "Chinese",
     "ko": "Korean", "ru": "Russian", "ar": "Arabic", "pt": "Portuguese",
+    "nl": "Dutch", "pl": "Polish",
 }
 
 
