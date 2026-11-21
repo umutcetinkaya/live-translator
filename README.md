@@ -81,8 +81,8 @@ System Audio  →  Speech Recognition  →  Translation              →  Overla
 - **Free & on-device by default**: translation runs on [TranslateGemma](https://huggingface.co/collections/google/translategemma), Google's open translation model, right on your Mac
 - **Read aloud**: translations are spoken with free macOS voices; Piper, OpenAI and Gemini voices are available too
 - **Real-time translation** of any audio on your Mac
-- **11 source languages**: English, German, French, Spanish, Italian, Japanese, Chinese, Korean, Russian, Arabic, Portuguese
-- **12 target languages**: translate into any supported language
+- **14 source languages**: English, German, French, Spanish, Italian, Japanese, Chinese, Korean, Russian, Arabic, Portuguese, Turkish, Dutch, Polish
+- **14 target languages**: translate into any supported language
 - **Sentence by sentence**: each finished sentence is translated once and stays put, so long sessions stay fast
 - **Bring your own key (optional)**: OpenAI, Google Gemini or Anthropic Claude for cloud translation
 - **Floating overlay**: dark-themed panel, draggable, always on top, with live voice controls
@@ -91,8 +91,11 @@ System Audio  →  Speech Recognition  →  Translation              →  Overla
 - **Optional realtime mode**: lower latency via OpenAI's Realtime Translation model; audio is streamed to the provider
 - **Auto-recovery**: a watchdog detects and recovers from stuck states
 - **Menu bar app**: runs quietly with a 🌐 icon
+- **Update notice**: when a new release is out, the 🌐 menu shows it
 
 ## What's new in v0.2
+
+**v0.2.3** adds Turkish, Dutch and Polish as spoken languages (Dutch and Polish as targets too) and tells you in the 🌐 menu when a new version is available.
 
 **v0.2.2** moves OpenAI voices to the Realtime API before OpenAI's older speech models shut down on January 6, 2027. Your saved voice moves to its closest match.
 
@@ -290,6 +293,7 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
   "tts_enabled": true,
   "tts_speed": 1.0,
   "realtime_mode": false,
+  "check_for_updates": true,
   "openai_api_key": "",
   "gemini_api_key": "",
   "anthropic_api_key": ""
@@ -297,6 +301,8 @@ Settings are stored in `~/.live-translator.json` and can be changed from the in-
 ```
 
 Downloaded models live in `~/Library/Application Support/LiveTranslator/models`.
+
+Once per launch the app asks GitHub (`api.github.com`) for the latest release, so it can tell you about updates. Nothing about you or your audio is sent; set `"check_for_updates": false` to turn it off.
 
 ## Troubleshooting
 
