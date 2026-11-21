@@ -1,4 +1,4 @@
-VERSION ?= 0.2.2
+VERSION ?= 0.2.3
 
 .PHONY: install run build dmg notarize models clean
 

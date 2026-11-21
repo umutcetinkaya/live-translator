@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.2-macOS.dmg">
+  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.3-macOS.dmg">
     <img src="https://img.shields.io/badge/⬇_Download_for_Mac-free-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download" height="36">
   </a>
   &nbsp;&nbsp;
@@ -114,7 +114,7 @@ Read the full story in **[What's new](WHATS-NEW.md)**, or every change in the **
 
 ### Option 1: DMG (Recommended)
 
-<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.2-macOS.dmg">
+<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.3-macOS.dmg">
   <img src="https://img.shields.io/badge/⬇_Download_DMG-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download DMG">
 </a>
 
