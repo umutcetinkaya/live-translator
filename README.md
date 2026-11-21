@@ -64,11 +64,11 @@ System Audio  →  Speech Recognition  →  Translation              →  Overla
 
 ## Demo
 
-### 🇬🇧 English → 🇹🇷 Turkish
-<img src="assets/videos/en-to-tr-demo.gif" width="100%" alt="English to Turkish demo">
-
 ### 🇯🇵 Japanese → 🇹🇷 Turkish
 <img src="assets/videos/jp-to-tr-demo.gif" width="100%" alt="Japanese to Turkish demo">
+
+### 🇬🇧 English → 🇹🇷 Turkish
+<img src="assets/videos/en-to-tr-demo.gif" width="100%" alt="English to Turkish demo">
 
 ### 🇸🇦 Arabic → 🇹🇷 Turkish
 <img src="assets/videos/ar-to-tr-demo.gif" width="100%" alt="Arabic to Turkish demo">
