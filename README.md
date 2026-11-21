@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.3-macOS.dmg">
+  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.4-macOS.dmg">
     <img src="https://img.shields.io/badge/⬇_Download_for_Mac-free-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download" height="36">
   </a>
   &nbsp;&nbsp;
@@ -95,6 +95,8 @@ System Audio  →  Speech Recognition  →  Translation              →  Overla
 
 ## What's new in v0.2
 
+**v0.2.4** remembers the speech level between launches and stops Settings from undoing changes made elsewhere.
+
 **v0.2.3** adds Turkish, Dutch and Polish as spoken languages (Dutch and Polish as targets too) and tells you in the 🌐 menu when a new version is available.
 
 **v0.2.2** moves OpenAI voices to the Realtime API before OpenAI's older speech models shut down on January 6, 2027. Your saved voice moves to its closest match.
@@ -114,7 +116,7 @@ Read the full story in **[What's new](WHATS-NEW.md)**, or every change in the **
 
 ### Option 1: DMG (Recommended)
 
-<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.3-macOS.dmg">
+<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.4-macOS.dmg">
   <img src="https://img.shields.io/badge/⬇_Download_DMG-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download DMG">
 </a>
 
