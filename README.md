@@ -1,4 +1,8 @@
 <p align="center">
+  <strong>English</strong> · <a href="README.tr.md">Türkçe</a>
+</p>
+
+<p align="center">
   <img src="assets/icon.iconset/icon_256x256.png" width="128" height="128" alt="Live Translator">
 </p>
 

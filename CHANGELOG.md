@@ -7,6 +7,10 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- Turkish README (README.tr.md), linked from the top of the English README.
+
 ## [0.2.2] - 2026-11-20
 
 ### Changed
