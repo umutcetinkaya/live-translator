@@ -40,6 +40,8 @@ download "zh/zh_CN/huayan/medium/zh_CN-huayan-medium" "zh_CN-huayan-medium"
 download "ru/ru_RU/denis/medium/ru_RU-denis-medium" "ru_RU-denis-medium"
 download "ar/ar_JO/kareem/medium/ar_JO-kareem-medium" "ar_JO-kareem-medium"
 download "pt/pt_BR/faber/medium/pt_BR-faber-medium" "pt_BR-faber-medium"
+download "nl/nl_NL/mls/medium/nl_NL-mls-medium" "nl_NL-mls-medium"
+download "pl/pl_PL/gosia/medium/pl_PL-gosia-medium" "pl_PL-gosia-medium"
 
 echo ""
 echo "=== Done! $(ls -1 *.onnx 2>/dev/null | wc -l | tr -d ' ') models downloaded ==="

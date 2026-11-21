@@ -9,7 +9,14 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- The speech level slider in the audio bar is now remembered after a restart.
+- Saving Settings no longer writes back old values for things changed elsewhere while the app runs (speech on/off, speech level, languages).
+- `make models` also downloads the Dutch and Polish Piper voices.
 - Documentation: README no longer says the source audio is turned down while translations play (that was removed), the watchdog timing matches the code, and SECURITY.md describes the free mode, Apple's speech service and the update check.
+
+### Removed
+
+- The unused `source_lang` setting; the spoken language has always come from `source_locale`.
 
 ## [0.2.3] - 2026-11-21
 

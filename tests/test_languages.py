@@ -40,3 +40,24 @@ def test_piper_voices_for_new_targets():
     assert PIPER_PATHS["nl"] == "nl/nl_NL/mls/medium"
     assert PIPER_VOICES["pl"] == "pl_PL-gosia-medium"
     assert PIPER_PATHS["pl"] == "pl/pl_PL/gosia/medium"
+
+
+def test_no_unused_source_lang_setting():
+    # The spoken language lives in source_locale; source_lang was never read.
+    from config import DEFAULTS
+    assert "source_lang" not in DEFAULTS
+    assert DEFAULTS["source_locale"] == "en-US"
+
+
+def test_realtime_provider_takes_no_unused_source_language():
+    import inspect
+    from providers.realtime_openai import OpenAIRealtimeProvider
+    assert "source_language" not in inspect.signature(OpenAIRealtimeProvider).parameters
+
+
+def test_make_models_downloads_every_piper_voice():
+    import os
+    script = open(os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                               "scripts", "download_models.sh"), encoding="utf-8").read()
+    for lang, path in PIPER_PATHS.items():
+        assert f'download "{path}/{PIPER_VOICES[lang]}" "{PIPER_VOICES[lang]}"' in script, lang
