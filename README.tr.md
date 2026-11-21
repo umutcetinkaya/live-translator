@@ -64,11 +64,11 @@ Sistem sesi        →  Konuşma tanıma   →  Çeviri                  →  Pa
 
 ## Demo
 
-### 🇬🇧 İngilizce → 🇹🇷 Türkçe
-<img src="assets/videos/en-to-tr-demo.gif" width="100%" alt="İngilizceden Türkçeye demo">
-
 ### 🇯🇵 Japonca → 🇹🇷 Türkçe
 <img src="assets/videos/jp-to-tr-demo.gif" width="100%" alt="Japoncadan Türkçeye demo">
+
+### 🇬🇧 İngilizce → 🇹🇷 Türkçe
+<img src="assets/videos/en-to-tr-demo.gif" width="100%" alt="İngilizceden Türkçeye demo">
 
 ### 🇸🇦 Arapça → 🇹🇷 Türkçe
 <img src="assets/videos/ar-to-tr-demo.gif" width="100%" alt="Arapçadan Türkçeye demo">
