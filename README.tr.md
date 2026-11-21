@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.2-macOS.dmg">
+  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.3-macOS.dmg">
     <img src="https://img.shields.io/badge/⬇_MAC_İÇİN_İNDİR-ÜCRETSİZ-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="İndir" height="36">
   </a>
   &nbsp;&nbsp;
@@ -114,7 +114,7 @@ Hikayenin tamamı **[What's new](WHATS-NEW.md)** sayfasında, tüm değişiklikl
 
 ### Seçenek 1: DMG (önerilen)
 
-<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.2-macOS.dmg">
+<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.3-macOS.dmg">
   <img src="https://img.shields.io/badge/⬇_DMG_İNDİR-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="DMG indir">
 </a>
 

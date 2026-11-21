@@ -7,7 +7,7 @@ Until now, Live Translator needed an API key from OpenAI, Google or Anthropic, a
 **Version 0.2 removes that.** Install the app, pick your languages, press play. Translation runs on your own Mac, translations are read aloud with your Mac's own voices, and there is nothing to sign up for or pay. No account, no API key, no usage limits.
 
 <p align="center">
-  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.2-macOS.dmg">
+  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.3-macOS.dmg">
     <img src="https://img.shields.io/badge/⬇_Download_Live_Translator_0.2-free-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="Download" height="36">
   </a>
 </p>

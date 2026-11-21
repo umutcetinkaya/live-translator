@@ -7,11 +7,14 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-21
+
 ### Added
 
 - Turkish, Dutch and Polish as spoken (source) languages, and Dutch and Polish as target languages, with Piper voices for both ([#11](https://github.com/umutcetinkaya/live-translator/issues/11)).
 - Update notice: once per launch the app asks GitHub for the latest release and, when it is newer, adds an "Update to …" item to the 🌐 menu that opens the release page. Turn it off with `"check_for_updates": false`.
 - Turkish README (README.tr.md), linked from the top of the English README.
+- Spanish sentences in the on-device accuracy benchmark, contributed by @avaldivieso-meraki ([#17](https://github.com/umutcetinkaya/live-translator/pull/17)).
 
 ## [0.2.2] - 2026-11-20
 
@@ -100,7 +103,8 @@ Live Translator is now free: translation and speech run on the Mac, with no acco
 - Text-to-speech with Piper (offline) or OpenAI voices.
 - Setup wizard and in-app settings.
 
-[Unreleased]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/umutcetinkaya/live-translator/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/umutcetinkaya/live-translator/compare/v0.1.0...v0.2.0
