@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.3-macOS.dmg">
+  <a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.4-macOS.dmg">
     <img src="https://img.shields.io/badge/⬇_MAC_İÇİN_İNDİR-ÜCRETSİZ-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="İndir" height="36">
   </a>
   &nbsp;&nbsp;
@@ -95,6 +95,8 @@ Sistem sesi        →  Konuşma tanıma   →  Çeviri                  →  Pa
 
 ## v0.2'de neler yeni
 
+**v0.2.4**, ses seviyesini açılışlar arasında hatırlar ve Ayarlar'ın başka yerde yapılan değişiklikleri geri almasını önler.
+
 **v0.2.3**, Türkçe, Hollandaca ve Lehçeyi konuşulan dil olarak ekler (Hollandaca ve Lehçe hedef dil olarak da gelir) ve yeni bir sürüm çıktığında bunu 🌐 menüsünde gösterir.
 
 **v0.2.2**, OpenAI'ın eski konuşma modelleri 6 Ocak 2027'de kapanmadan önce OpenAI seslerini Realtime API'ye taşır. Kayıtlı sesiniz ona en yakın sese geçer.
@@ -114,7 +116,7 @@ Hikayenin tamamı **[What's new](WHATS-NEW.md)** sayfasında, tüm değişiklikl
 
 ### Seçenek 1: DMG (önerilen)
 
-<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.3-macOS.dmg">
+<a href="https://github.com/umutcetinkaya/live-translator/releases/latest/download/LiveTranslator-v0.2.4-macOS.dmg">
   <img src="https://img.shields.io/badge/⬇_DMG_İNDİR-brightgreen?style=for-the-badge&logo=apple&logoColor=white" alt="DMG indir">
 </a>
 
