@@ -57,11 +57,17 @@ working copy ends up in the DMG.
 src/
 ├── audio_capture.py       # ScreenCaptureKit system audio
 ├── speech_recognizer.py   # SFSpeechRecognizer + watchdog
-├── translator.py          # OpenAI translation engine
-├── pipeline.py            # Orchestrator (listener + translator)
-├── overlay.py             # WebKit UI panel
-├── tts.py                 # Text-to-speech (Piper/OpenAI)
-└── config.py              # Settings management
+├── segmenter.py           # Splits the transcript into finished sentences
+├── translator.py          # Sends sentences to the translation provider
+├── pipeline.py            # Orchestrator (capture, recognition, translation, speech)
+├── overlay.py             # WebKit UI panel and settings
+├── tts.py                 # Speech queue and normalisation
+├── local_models.py        # On-device model tiers
+├── model_store.py         # Model download and progress
+├── update_check.py        # New release notice
+├── config.py              # Settings management
+└── providers/             # local (TranslateGemma), OpenAI, Gemini, Claude,
+                           # realtime, system voice, Piper
 ```
 
 ## Guidelines

@@ -11,7 +11,7 @@
 <p align="center">
   <strong>Mac'inizde çalan her ses için ücretsiz, gizli ve anlık çeviri.</strong><br>
   YouTube, podcast, toplantı, film: çeviriyi ekranda canlı görün, sesli dinleyin.<br>
-  Hesap yok. API anahtarı yok. Her şey Mac'inizde çalışır.
+  Hesap yok. API anahtarı yok. Çeviri ve ses Mac'inizde çalışır.
 </p>
 
 <p align="center">
@@ -155,7 +155,7 @@ Live Translator kurulduğu haliyle Mac'inizden başka hiçbir şeye ihtiyaç duy
 | **Standart**: [TranslateGemma 4B, 8-bit](https://huggingface.co/mlx-community/translategemma-4b-it-8bit) | 16 GB veya üzeri | 4,2 GB | ~4,4 GB | cümle başına ~0,6 sn | 12'de 11 |
 | **Büyük**: [TranslateGemma 12B, 4-bit](https://huggingface.co/mlx-community/translategemma-12b-it-4bit) | isteğe bağlı, 32 GB veya üzeri | 6,7 GB | ~7 GB | cümle başına ~1 sn | 12'de 12 |
 
-Modeli değiştirmek ya da indirilmiş bir modeli silmek için **Ayarlar**'ı kullanabilirsiniz. Doğruluk testi `scripts/bench_local_models.py` betiğidir: yanlış çevirinin kolayca gözden kaçabildiği cümleler (haftanın günleri, saatler, sayılar, olumsuzluklar), konuşma tanımanın verdiği haliyle noktalamasız metin de dahil, İngilizce, Japonca ve Arapça üzerinden. Bu testlerde küçük model noktalamasız metinde haftanın günlerini yanlış çevirdi, 8-bit model ise çevirmedi; yeterli belleği olan Mac'lerin 8-bit modeli almasının nedeni bu. Önce aynı boyuttaki genel sohbet modelleri (Qwen3 4B ve 8B, Gemma 3 4B) denendi ve bunlar Türkçede "Thursday"i sık sık yanlış güne çevirdi; bu yüzden ücretsiz mod bunun yerine çeviriye özel bir model kullanıyor.
+Modeli değiştirmek ya da indirilmiş bir modeli silmek için **Ayarlar**'ı kullanabilirsiniz. Doğruluk testi `scripts/bench_local_models.py` betiğidir: yanlış çevirinin kolayca gözden kaçabildiği cümleler (haftanın günleri, saatler, sayılar, olumsuzluklar), konuşma tanımanın verdiği haliyle noktalamasız metin de dahil, İngilizce, Japonca ve Arapça kaynaklı. Yukarıdaki puanlar ilk 12 cümleden; İspanyolca cümleler sonradan eklendi. Bu testlerde küçük model noktalamasız metinde haftanın günlerini yanlış çevirdi, 8-bit model ise çevirmedi; yeterli belleği olan Mac'lerin 8-bit modeli almasının nedeni bu. Önce aynı boyuttaki genel sohbet modelleri (Qwen3 4B ve 8B, Gemma 3 4B) denendi ve bunlar Türkçede "Thursday"i sık sık yanlış güne çevirdi; bu yüzden ücretsiz mod bunun yerine çeviriye özel bir model kullanıyor.
 
 TranslateGemma, Google tarafından [Gemma Kullanım Koşulları](https://ai.google.dev/gemma/terms) altında yayınlanır; uygulamayla birlikte gelmez, ilk kullanımda Hugging Face'ten indirilir.
 
@@ -198,7 +198,7 @@ macOS her dil için temel bir sesle gelir. Çok daha doğal bir ses için **Sist
 | **OpenAI** | Realtime API üzerinden doğal sesler (Marin ve Cedar önerilir, 8 ses daha var) | Ücretli; 1,5x üzerindeki hızlar sınırlanır |
 | **Gemini TTS** | Gemini ile doğal sesler | Ücretli |
 
-Seslendirilen çevirilerin ses yüksekliği normalize edilir ve bunlar çalarken kaynak ses kısılır. Uygulamanın kendi sesi yakalanan sesten ayıklanır, bu yüzden geri besleme döngüsü oluşmaz.
+Seslendirilen çevirilerin ses yüksekliği, kaynağın üstünde duyulacak şekilde normalize edilir; kaynağı kısmak isterseniz oynatıcınızdan kısın. Uygulamanın kendi sesi yakalanan sesten ayıklanır, bu yüzden geri besleme döngüsü oluşmaz.
 
 ## Bulut sağlayıcılar (isteğe bağlı)
 
@@ -261,7 +261,7 @@ live-translator/
 │   ├── model_store.py           # Model indirme + ilerleme
 │   ├── pipeline.py              # Listener + Translator orkestratörü
 │   ├── overlay.py               # WebKit yüzen paneli (HTML/CSS/JS)
-│   ├── tts.py                   # Seslendirme kuyruğu, normalizasyon, ses kısma
+│   ├── tts.py                   # Seslendirme kuyruğu, normalizasyon
 │   └── config.py                # JSON ayarları
 ├── scripts/
 │   ├── build_app.sh             # .app paketini derler
@@ -310,7 +310,7 @@ Uygulama her açılışta bir kez, güncellemeleri haber verebilmek için GitHub
 |-------|-------|
 | "Hasarlı olduğu için açılamıyor" ("Damaged and can't be opened") | DMG'yi [sürümler sayfasından](https://github.com/umutcetinkaya/live-translator/releases/latest) yeniden indirin; 0.2.0 öncesi sürümler notarize edilmemişti |
 | Ses algılanmıyor | Ekran ve Sistem Sesi Kaydı iznini verin, uygulamayı yeniden başlatın |
-| STT çalışmayı bırakıyor | Yerleşik watchdog 10 saniye içinde otomatik olarak toparlar |
+| STT çalışmayı bırakıyor | Yerleşik watchdog yaklaşık 20 saniye içinde otomatik olarak toparlar |
 | Çeviri görünmüyor | Ücretsiz mod: panelde gösterilen model indirmesinin bitmesini bekleyin. Bulut sağlayıcılar: Ayarlar'da API anahtarını kontrol edin |
 | Model indirilemiyor | İnternet bağlantınızı ve boş disk alanınızı kontrol edin (4,2 GB'a kadar, büyük model için 6,7 GB), sonra yeniden denemek için Ayarlar'da Save'e basın |
 | Güncellemeden sonraki ilk açılış yavaş | Uygulama yeni bileşenlerini bir kez kurar; bu yaklaşık bir dakika sürebilir |

@@ -7,6 +7,10 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- Documentation: README no longer says the source audio is turned down while translations play (that was removed), the watchdog timing matches the code, and SECURITY.md describes the free mode, Apple's speech service and the update check.
+
 ## [0.2.3] - 2026-11-21
 
 ### Added
